@@ -1,357 +1,240 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PDF Studio</title>
-  <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
-  <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>scan2pdf-mobile</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script async src="https://docs.opencv.org/4.x/opencv.js" onload="onOpenCvReady()"></script>
   <style>
     :root {
-      --bg: #f5f7fb;
-      --card: rgba(255, 255, 255, 0.9);
-      --text: #101827;
-      --muted: #667085;
-      --primary: #635bff;
-      --primary-dark: #4f46e5;
-      --accent: #06b6d4;
-      --danger: #ef4444;
-      --border: #e5e7eb;
-      --shadow: 0 24px 70px rgba(16, 24, 40, 0.13);
-      --radius: 26px;
+      --bg:#050505; --panel:#151515; --bar:#202020; --card:#242424;
+      --text:#f8fafc; --muted:#a1a1aa; --accent:#0ea5e9; --ok:#22c55e; --danger:#ef4444; --warn:#f59e0b;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: var(--text);
-      background:
-        radial-gradient(circle at 12% 8%, rgba(99, 91, 255, 0.22), transparent 34%),
-        radial-gradient(circle at 90% 12%, rgba(6, 182, 212, 0.18), transparent 30%),
-        linear-gradient(180deg, #ffffff 0%, var(--bg) 44%, #eef2ff 100%);
-      padding: 28px;
-    }
-
-    .app { width: min(1180px, 100%); margin: 0 auto; }
-
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 18px;
-      margin-bottom: 22px;
-      padding: 14px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.72);
-      border: 1px solid rgba(255, 255, 255, 0.9);
-      box-shadow: 0 12px 35px rgba(16, 24, 40, 0.08);
-      backdrop-filter: blur(16px);
-    }
-
-    .logo { display: flex; align-items: center; gap: 12px; min-width: 0; }
-    .logo-mark {
-      width: 44px; height: 44px; display: grid; place-items: center;
-      border-radius: 16px; color: white;
-      background: linear-gradient(135deg, var(--primary), var(--accent));
-      box-shadow: 0 12px 24px rgba(99, 91, 255, 0.28); flex: 0 0 auto;
-      font-weight: 900;
-    }
-    .logo-text { min-width: 0; }
-    .logo-text strong { display: block; font-size: 18px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .logo-text span { display: block; color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-    .toolbar { display: flex; gap: 10px; align-items: center; justify-content: flex-end; flex: 0 0 auto; }
-    select, button, input { font: inherit; }
-    select {
-      max-width: 180px; border: 1px solid var(--border); background: white;
-      border-radius: 999px; padding: 11px 14px; color: var(--text); outline: none;
-    }
-
-    .headline { text-align: center; padding: 14px 8px 2px; }
-    .headline h1 { margin: 0; font-size: clamp(34px, 6vw, 64px); letter-spacing: -0.055em; line-height: 0.96; }
-    .headline p { margin: 14px auto 0; max-width: 760px; color: var(--muted); font-size: clamp(15px, 2vw, 18px); line-height: 1.6; }
-
-    .panel {
-      margin-top: 22px;
-      background: var(--card);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255,255,255,0.88);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 24px;
-      overflow: hidden;
-    }
-
-    .drop-zone {
-      position: relative; display: grid; place-items: center; min-height: 250px;
-      padding: 34px 24px; text-align: center; cursor: pointer;
-      border: 2px dashed #a5b4fc; border-radius: 24px;
-      background: linear-gradient(135deg, rgba(99,91,255,0.10), rgba(6,182,212,0.09)), rgba(255,255,255,0.62);
-      transition: 0.2s ease; overflow: hidden;
-    }
-    .drop-zone::before { content: ""; position: absolute; inset: 16px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.75); pointer-events: none; }
-    .drop-zone:hover, .drop-zone.dragover {
-      transform: translateY(-2px); border-color: var(--primary);
-      background: linear-gradient(135deg, rgba(99,91,255,0.18), rgba(6,182,212,0.16)), rgba(255,255,255,0.75);
-      box-shadow: 0 18px 45px rgba(99, 91, 255, 0.18);
-    }
-    .drop-zone.dragover { outline: 5px solid rgba(99, 91, 255, 0.12); }
-    .drop-content { position: relative; z-index: 1; }
-    .upload-icon { width: 76px; height: 76px; display: grid; place-items: center; margin: 0 auto 16px; border-radius: 24px; background: white; box-shadow: 0 16px 34px rgba(99,91,255,0.2); font-size: 34px; }
-    .drop-zone strong { display: block; font-size: clamp(22px, 3vw, 30px); margin-bottom: 10px; letter-spacing: -0.03em; }
-    .drop-zone span { color: var(--muted); line-height: 1.6; }
-    input[type="file"] { display: none; }
-
-    .actions {
-      display: flex; justify-content: space-between; align-items: center; gap: 14px;
-      margin-top: 18px; padding: 14px; border-radius: 20px;
-      background: rgba(248, 250, 252, 0.9); border: 1px solid var(--border);
-    }
-    .status { color: var(--muted); min-height: 24px; overflow-wrap: anywhere; }
-
-    .btn {
-      border: none; border-radius: 14px; padding: 12px 16px; cursor: pointer;
-      font-weight: 800; transition: 0.18s ease; white-space: nowrap;
-    }
-    .btn:hover { transform: translateY(-1px); }
-    .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-    .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; box-shadow: 0 14px 26px rgba(79, 70, 229, 0.28); }
-    .btn-soft { background: white; color: var(--text); border: 1px solid var(--border); }
-    .btn-danger { background: #fee2e2; color: #991b1b; }
-
-    .list-header { display: flex; justify-content: space-between; align-items: end; gap: 12px; margin: 26px 0 12px; }
-    .list-header h2 { margin: 0; font-size: 22px; letter-spacing: -0.03em; }
-    .hint { color: var(--muted); font-size: 14px; line-height: 1.5; }
-    .file-count { padding: 7px 11px; border-radius: 999px; background: #eef2ff; color: #3730a3; font-weight: 800; white-space: nowrap; }
-
-    .file-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, 170px);
-      gap: 16px;
-      align-items: start;
-      justify-content: start;
-      min-height: 180px;
-    }
-
-    .file-card {
-      position: relative;
-      display: grid;
-      width: 170px;
-      min-width: 170px;
-      max-width: 170px;
-      gap: 10px;
-      background: white;
-      border: 1px solid var(--border);
-      border-radius: 22px;
-      padding: 10px;
-      box-shadow: 0 10px 24px rgba(16, 24, 40, 0.06);
-      cursor: grab;
-      transition: 0.18s ease;
-      min-width: 0;
-    }
-
-    .file-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 18px 36px rgba(16, 24, 40, 0.11);
-    }
-
-    .file-card:active { cursor: grabbing; }
-    .file-card.dragging { opacity: 0.42; transform: scale(0.985); }
-    .file-card.drag-over { border-color: var(--primary); box-shadow: 0 0 0 5px rgba(99,91,255,0.13); }
-
-    .preview {
-      width: 100%;
-      aspect-ratio: 0.72 / 1;
-      height: 220px;
-      max-height: 220px;
-      border-radius: 17px;
-      overflow: hidden;
-      background: #f3f4f6;
-      border: 1px solid var(--border);
-      display: grid;
-      place-items: center;
-      position: relative;
-    }
-
-    .preview img, .preview canvas {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-
-    .preview-badge {
-      position: absolute;
-      left: 8px;
-      top: 8px;
-      padding: 5px 8px;
-      border-radius: 999px;
-      background: rgba(17,24,39,0.78);
-      color: white;
-      font-size: 11px;
-      font-weight: 900;
-    }
-
-    .order-badge {
-      position: absolute;
-      right: 8px;
-      top: 8px;
-      width: 34px;
-      height: 34px;
-      display: grid;
-      place-items: center;
-      border-radius: 999px;
-      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-      color: white;
-      font-weight: 950;
-      box-shadow: 0 10px 20px rgba(79, 70, 229, 0.28);
-      z-index: 2;
-    }
-
-    .preview-placeholder { color: var(--muted); font-weight: 900; font-size: 26px; }
-
-    .file-info { min-width: 0; }
-    .file-title {
-      font-weight: 850;
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      font-size: clamp(11px, 2vw, 14px);
-      padding: 0 2px;
-    }
-    .file-meta, .file-help { display: none; }
-
-    .file-tools {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 6px;
-      align-items: center;
-    }
-
-    .position-row {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 800;
-      min-width: 0;
-    }
-
-    .position-row span { display: none; }
-
-    .position-input {
-      width: clamp(46px, 11vw, 64px);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 9px;
-      text-align: center;
-      font-weight: 900;
-      outline: none;
-      background: #f8fafc;
-    }
-
-    .position-input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(99,91,255,0.12); }
-
-    .file-buttons {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-      justify-content: flex-end;
-    }
-
-    .file-buttons .btn {
-      padding: 8px clamp(7px, 1.8vw, 10px);
-      border-radius: 11px;
-      font-size: clamp(10px, 1.9vw, 12px);
-    }
-
-    .file-buttons .btn-soft { display: none; }
-
-    .empty { text-align: center; color: var(--muted); padding: 34px; border-radius: 20px; background: rgba(255,255,255,0.7); border: 1px dashed var(--border); }
-
-    @media (max-width: 820px) {
-      body { padding: 14px; }
-      .topbar { border-radius: 22px; align-items: stretch; flex-direction: column; }
-      .toolbar { width: 100%; justify-content: stretch; }
-      .toolbar select, .toolbar button { flex: 1; min-width: 0; }
-      .logo-text strong, .logo-text span { white-space: normal; }
-      .panel { padding: 16px; }
-      .drop-zone { min-height: 230px; padding: 28px 16px; }
-      .actions { flex-direction: column; align-items: stretch; }
-      .btn-primary { width: 100%; }
-      .list-header { align-items: flex-start; flex-direction: column; }
-      .file-list {
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-        justify-content: start;
-        gap: 10px;
-      }
-      .file-card { border-radius: 18px; padding: 8px; }
-      .position-input { padding: 8px; }
-      .file-buttons .btn { padding: 8px 9px; }
-    }
+    *{box-sizing:border-box} html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text)}
+    body{padding-bottom:8px} button,input{font:inherit} button{border:0;cursor:pointer;color:white;font-weight:800}
+    .app{max-width:1040px;margin:0 auto;background:#050505;min-height:100vh}
+    header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 14px 10px;background:#080808;border-bottom:1px solid #222;position:sticky;top:0;z-index:20}
+    .brand h1{font-size:18px;margin:0}.brand p{font-size:12px;color:var(--muted);margin:2px 0 0}.status{font-size:12px;color:var(--warn);font-weight:800}.status.good{color:var(--ok)}
+    .top-actions{display:flex;gap:8px;align-items:center}.lang-select{max-width:135px;background:#252525;color:white;border:1px solid #333;border-radius:14px;padding:10px;font-weight:800;overflow-y:auto}.icon-btn{width:44px;height:44px;border-radius:14px;background:#252525;display:grid;place-items:center;font-size:20px}.icon-btn.primary{background:var(--accent)}.icon-btn.danger{background:#3b1111;color:#fecaca}.icon-btn:disabled{opacity:.45}
+    main{display:grid;grid-template-columns:1.08fr .92fr;gap:12px;padding:12px}.panel{background:var(--panel);border:1px solid #2b2b2b;border-radius:22px;padding:12px}.section-title{display:flex;align-items:center;justify-content:space-between;margin:0 0 10px;font-size:15px}
+    .camera-wrap{position:relative;overflow:hidden;border-radius:22px;background:#000;height:min(66vh,680px);min-height:390px;touch-action:none}.camera-wrap video,.camera-wrap canvas.preview{width:100%;height:100%;display:block;object-fit:contain;background:#000;border-radius:22px}#editCanvas{display:none}#workCanvas{display:none}
+    .detect-label{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:5;background:rgba(0,0,0,.68);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:8px 12px;font-size:12px;font-weight:900;white-space:nowrap}.camera-empty{position:absolute;inset:18px;z-index:7;display:grid;place-items:center;text-align:center;border:2px dashed rgba(255,255,255,.24);border-radius:22px;background:radial-gradient(circle at center,rgba(14,165,233,.20),rgba(0,0,0,.86));padding:18px}.camera-empty.hidden{display:none}.camera-empty h2{font-size:24px;margin:0 0 8px}.camera-empty p{margin:0 0 14px;color:var(--muted);line-height:1.4}.camera-empty button{border-radius:18px;padding:15px 18px;background:var(--accent);color:#00111f;font-size:17px}
+    .overlay{position:absolute;inset:0;z-index:4;pointer-events:none}.poly{width:100%;height:100%}.corner{position:absolute;width:32px;height:32px;border-radius:50%;background:var(--accent);border:3px solid white;transform:translate(-50%,-50%);display:none;z-index:8;box-shadow:0 8px 22px #000;touch-action:none}.editing .corner{display:block}
+    .scan-console{margin-top:8px;background:#202020;border-radius:20px;padding:10px;display:grid;gap:8px}.control-row{display:grid;grid-template-columns:76px 1fr 76px;align-items:center;gap:8px}.round-action{width:62px;height:62px;border-radius:50%;margin:auto;border:4px solid white;background:#d9d9d9;box-shadow:0 0 0 3px rgba(255,255,255,.18)}.side-action{display:grid;place-items:center;gap:3px;background:transparent;color:white;font-size:11px}.side-action .symbol{font-size:27px;line-height:1}.side-action:disabled{opacity:.3}.scan-footer{display:grid;grid-template-columns:68px 1fr 82px;align-items:center;gap:8px}.thumb{width:58px;height:58px;border-radius:8px;background:#111;border:1px solid #444;position:relative;overflow:hidden}.thumb img{width:100%;height:100%;object-fit:cover}.thumb .count{position:absolute;right:0;top:0;background:#0d9488;padding:3px 8px;font-weight:900}.finish-btn{border-radius:14px;background:var(--ok);color:#03140a;padding:11px 10px;font-size:13px}.hint{text-align:center;color:var(--muted);font-size:11px;margin:0;line-height:1.2}
+    .toolbar,.batchbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.toolbar button,.batchbar button{border-radius:14px;padding:12px 13px;background:#333}.toolbar .ok,.batchbar .ok{background:var(--ok);color:#03140a}.toolbar .danger{background:var(--danger)}.batchbar .primary{background:var(--accent);color:#00111f}.batchbar input{width:100%;border:1px solid #333;background:#080808;color:white;border-radius:14px;padding:13px}
+    .pages{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px;margin-top:12px;touch-action:pan-y}.page-card{background:var(--card);border:2px solid transparent;border-radius:18px;padding:8px;position:relative;user-select:none;touch-action:pan-y;transition:transform .15s ease,opacity .15s ease,border-color .15s ease}.page-card.dragging{opacity:.35;transform:scale(.96);border-color:var(--accent)}.page-card.drop-target{border-color:var(--ok);transform:scale(1.03)}.drag-handle{margin-top:8px;border-radius:12px;background:#333;color:white;padding:9px;font-size:13px;font-weight:900;text-align:center;cursor:grab;touch-action:none}.drag-handle:active{cursor:grabbing}.drag-ghost{position:fixed;z-index:9999;pointer-events:none;opacity:.72;transform:translate(-50%,-50%) scale(.92);width:110px;border-radius:16px;box-shadow:0 18px 45px rgba(0,0,0,.5)}.page-card.selected{border-color:var(--ok);background:rgba(34,197,94,.12)}.page-card img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:12px;background:white}.badge{position:absolute;right:8px;top:8px;background:var(--accent);color:#00111f;border-radius:999px;padding:4px 8px;font-weight:900}.page-select{display:flex;align-items:center;gap:8px;margin-top:8px;background:rgba(255,255,255,.07);border-radius:12px;padding:8px;font-size:13px;font-weight:900}.page-select input{width:26px;height:26px;accent-color:#22c55e}.page-card small{display:block;color:var(--muted);margin-top:6px}.page-actions{display:flex;gap:5px;margin-top:7px}.page-actions button{flex:1;border-radius:10px;padding:7px 6px;background:#333;font-size:12px}.page-actions .delete{background:#471313;color:#fecaca}
+    @media(max-width:879px){header{position:static;padding:calc(6px + env(safe-area-inset-top)) 10px 6px}.brand p{display:none}main{display:block;padding:0}.panel{border-radius:0;border-left:0;border-right:0}.camera-panel{padding:0 0 8px}.camera-panel .section-title{display:none}.camera-wrap{border-radius:0;height:calc(100svh - 190px);min-height:420px}.camera-wrap video,.camera-wrap canvas.preview{border-radius:0}.scan-console{border-radius:0;margin-top:0;padding:8px 10px;gap:6px}.control-row{grid-template-columns:70px 1fr 70px}.round-action{width:60px;height:60px}.scan-footer{grid-template-columns:62px 1fr 78px}.thumb{width:54px;height:54px}.side-action .symbol{font-size:24px}.side-action span:last-child{font-size:10px}.hint{font-size:10px}.finish-btn{font-size:12px;padding:10px 8px}.pages{grid-template-columns:repeat(auto-fill,minmax(104px,1fr))}.top-actions .desktop-only{display:none}}
   </style>
 </head>
 <body>
-  <main class="app">
-    <nav class="topbar">
-      <div class="logo">
-        <div class="logo-mark">PDF</div>
-        <div class="logo-text">
-          <strong data-i18n="appName">PDF Studio</strong>
-          <span data-i18n="topline">Lokal im Browser · keine Uploads</span>
+<div class="app">
+  <header>
+    <div class="brand"><h1>scan2pdf-mobile</h1><p data-i18n="subtitle">Dokumente scannen, sortieren und als PDF teilen.</p></div>
+    <span id="status" class="status">OpenCV lädt …</span>
+    <div class="top-actions">
+      <select id="langSelect" class="lang-select" aria-label="Sprache wählen">
+        <option value="auto">🌐 Auto</option>
+        <option value="de">Deutsch</option>
+        <option value="en">English</option>
+        <option value="fr">Français</option>
+        <option value="it">Italiano</option>
+        <option value="es">Español</option>
+        <option value="pt">Português</option>
+        <option value="tr">Türkçe</option>
+        <option value="ar">العربية</option>
+      </select>
+      <button id="startBtn" class="icon-btn primary" title="Kamera aktivieren">📷</button>
+      <button id="stopBtn" class="icon-btn danger" title="Kamera aus" disabled>⏹</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel camera-panel">
+      <h2 class="section-title"><span data-i18n="scan">Scan</span> <span id="pageCountTop" class="status good">0 Seiten</span></h2>
+      <div id="cameraWrap" class="camera-wrap">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="editCanvas" class="preview"></canvas>
+        <canvas id="workCanvas"></canvas>
+        <div id="detectLabel" class="detect-label">Scanner wird geladen …</div>
+        <div id="cameraEmpty" class="camera-empty">
+          <div><h2 data-i18n="cameraOff">📷 Kamera ist aus</h2><p data-i18n="tapToScan">Tippe hier, um ein Dokument zu scannen.</p><button id="emptyStartBtn" data-i18n="enableCamera">Kamera aktivieren</button></div>
+        </div>
+        <div class="overlay"><svg id="polySvg" class="poly" viewBox="0 0 100 100" preserveAspectRatio="none"><polygon id="poly" points="10,12 90,12 90,88 10,88" fill="rgba(14,165,233,.13)" stroke="#0ea5e9" stroke-width="1.2" vector-effect="non-scaling-stroke" /></svg></div>
+        <div class="corner" data-i="0"></div><div class="corner" data-i="1"></div><div class="corner" data-i="2"></div><div class="corner" data-i="3"></div>
+      </div>
+
+      <div class="scan-console">
+        <div class="control-row">
+          <button id="repeatBtn" class="side-action" disabled><span class="symbol">↺</span><span data-i18n="repeat">Wiederholen</span></button>
+          <button id="captureBtn" class="round-action" aria-label="Foto aufnehmen" disabled></button>
+          <button id="nextBtn" class="side-action" disabled><span class="symbol">✓</span><span data-i18n="next">Weiter</span></button>
+        </div>
+        <div class="scan-footer">
+          <div id="thumb" class="thumb"><span class="count">0</span></div>
+          <p class="hint" data-i18n="scanHint">Nach dem Foto: bei Bedarf Ecken ziehen. Dann „Weiter“.</p>
+          <button id="doneBtn" class="finish-btn" data-i18n="done">Fertig</button>
         </div>
       </div>
-      <div class="toolbar">
-        <select id="languageSelect" aria-label="Language">
-          <option value="auto">🌍 Auto</option>
-          <option value="de">Deutsch</option>
-          <option value="en">English</option>
-          <option value="fr">Français</option>
-          <option value="it">Italiano</option>
-          <option value="es">Español</option>
-        </select>
-        <button class="btn btn-soft" id="clearBtn" data-i18n="clear">Leeren</button>
-      </div>
-    </nav>
-
-    <section class="headline">
-      <h1 data-i18n="title">Ein großes PDF aus allem.</h1>
-      <p data-i18n="subtitle">Ziehe Bilder und PDFs hinein, sieh die Vorschau, sortiere sie frei und lade alles als eine saubere PDF-Datei herunter.</p>
     </section>
 
-    <section class="panel">
-      <label class="drop-zone" id="dropZone" for="fileInput">
-        <div class="drop-content">
-          <div class="upload-icon">⬆️</div>
-          <strong data-i18n="uploadTitle">Dateien hier hineinziehen</strong>
-          <span data-i18n="uploadText">Oder klicken zum Auswählen. PDF, DOC, DOCX, TXT, RTF, ODT, PPTX, XLSX, PNG, JPG, JPEG und WebP werden unterstützt.</span>
-        </div>
-      </label>
-
-      <input id="fileInput" type="file" multiple accept="application/pdf,image/png,image/jpeg,image/webp,.doc,.docx,.txt,.rtf,.odt,.pptx,.xlsx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,application/rtf,application/vnd.oasis.opendocument.text,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
-
-      <div class="actions">
-        <div class="status" id="status" data-i18n="ready">Bereit.</div>
-        <button class="btn btn-primary" id="createBtn" data-i18n="create">PDF erstellen</button>
+    <section class="panel" id="exportPanel">
+      <h2 class="section-title"><span data-i18n="pagesExport">Seiten & Export</span> <span id="pageCount" class="status good">0 Seiten</span></h2>
+      <div class="toolbar">
+        <button id="selectAllBtn" class="ok" data-i18n="selectAll">✓ Alle auswählen</button>
+        <button id="clearSelectBtn" data-i18n="clearSelection">Auswahl entfernen</button>
+        <button id="deleteSelectedBtn" class="danger" data-i18n="deleteSelected">Ausgewählte löschen</button>
       </div>
-
-      <div class="list-header">
-        <div>
-          <h2 data-i18n="files">Reihenfolge & Vorschau</h2>
-          <div class="hint" data-i18n="sortHint">Ziehe Karten hoch/runter oder gib direkt die Zielposition ein.</div>
-        </div>
-        <div class="file-count" id="fileCount">0</div>
+      <div class="batchbar">
+        <input id="pdfNameInput" type="text" data-i18n-placeholder="pdfNamePlaceholder" placeholder="Dokumentnamen eintragen, z.B. Rechnung Mai" />
+        <button id="downloadPdfBtn" class="primary" data-i18n="downloadPdf">PDF herunterladen</button>
+        <button id="sharePdfBtn" class="ok" data-i18n="sharePdf">PDF teilen</button>
       </div>
-
-      <div class="file-list" id="fileList"></div>
+      <div id="pages" class="pages"></div>
     </section>
   </main>
+</div>
 
-  <script type="module" src="./app.js"></script>
+<script>
+  const video = document.getElementById('video'), editCanvas = document.getElementById('editCanvas'), workCanvas = document.getElementById('workCanvas');
+  const editCtx = editCanvas.getContext('2d'), workCtx = workCanvas.getContext('2d', { willReadFrequently:true });
+  const cameraWrap = document.getElementById('cameraWrap'), poly = document.getElementById('poly'), polySvg = document.getElementById('polySvg');
+  const corners = [...document.querySelectorAll('.corner')], pagesEl = document.getElementById('pages');
+  const statusEl = document.getElementById('status'), detectLabel = document.getElementById('detectLabel'), cameraEmpty = document.getElementById('cameraEmpty');
+  const langSelect = document.getElementById('langSelect');
+  const pageCount = document.getElementById('pageCount'), pageCountTop = document.getElementById('pageCountTop'), thumb = document.getElementById('thumb');
+  const startBtn = document.getElementById('startBtn'), stopBtn = document.getElementById('stopBtn'), emptyStartBtn = document.getElementById('emptyStartBtn');
+  const captureBtn = document.getElementById('captureBtn'), repeatBtn = document.getElementById('repeatBtn'), nextBtn = document.getElementById('nextBtn'), doneBtn = document.getElementById('doneBtn');
+  const selectAllBtn = document.getElementById('selectAllBtn'), clearSelectBtn = document.getElementById('clearSelectBtn'), deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+  const downloadPdfBtn = document.getElementById('downloadPdfBtn'), sharePdfBtn = document.getElementById('sharePdfBtn'), pdfNameInput = document.getElementById('pdfNameInput');
+  let cvReady=false, streamStarted=false, detectTimer=null, pages=[], currentImage=null, points=defaultPoints(), editPoints=[], dragging=null;
+  let currentLang='de';
+  const i18n={
+    de:{subtitle:'Dokumente scannen, sortieren und als PDF teilen.',scan:'Scan',cameraOff:'📷 Kamera ist aus',tapToScan:'Tippe hier, um ein Dokument zu scannen.',enableCamera:'Kamera aktivieren',repeat:'Wiederholen',next:'Weiter',scanHint:'Nach dem Foto: bei Bedarf Ecken ziehen. Dann „Weiter”.',done:'Fertig',pagesExport:'Seiten & Export',selectAll:'✓ Alle auswählen',clearSelection:'Auswahl entfernen',deleteSelected:'Ausgewählte löschen',pdfNamePlaceholder:'Dokumentnamen eintragen, z.B. Rechnung Mai',downloadPdf:'PDF herunterladen',sharePdf:'PDF teilen',opencvReady:'OpenCV bereit',enableCameraLabel:'Kamera aktivieren',cameraActive:'Kamera aktiv',cameraOffStatus:'Kamera aus',searching:'Dokument wird gesucht …',detected:'Dokumentkanten erkannt',autoDetected:'Automatisch erkannt',contrast:'Dokument auf kontrastreichen Hintergrund legen',searchEdges:'Suche Kanten',manualCorrect:'Bitte Ecken manuell korrigieren',autoCorrect:'Automatisch erkannt – bei Bedarf Ecken ziehen',onePage:'1 Seite',pages:n=>`${n} Seiten`,selected:'Für PDF ausgewählt',notSelected:'Nicht in PDF',sortHint:n=>`Seite ${n} · ziehen zum Sortieren`,noPages:'Keine Seiten vorhanden.',noSelected:'Keine Seiten ausgewählt.',shareUnsupported:'Teilen wird von diesem Browser nicht unterstützt. Die PDF wurde heruntergeladen.',cameraError:'Kamera konnte nicht gestartet werden. Bitte HTTPS verwenden und Kamera erlauben.'},
+    en:{subtitle:'Scan, organize and share documents as PDF.',scan:'Scan',cameraOff:'📷 Camera is off',tapToScan:'Tap here to scan a document.',enableCamera:'Enable camera',repeat:'Retake',next:'Next',scanHint:'After the photo: adjust corners if needed. Then tap “Next”.',done:'Done',pagesExport:'Pages & Export',selectAll:'✓ Select all',clearSelection:'Clear selection',deleteSelected:'Delete selected',pdfNamePlaceholder:'Enter document name, e.g. May invoice',downloadPdf:'Download PDF',sharePdf:'Share PDF',opencvReady:'OpenCV ready',enableCameraLabel:'Enable camera',cameraActive:'Camera active',cameraOffStatus:'Camera off',searching:'Searching for document …',detected:'Document edges detected',autoDetected:'Auto detected',contrast:'Place document on a high-contrast background',searchEdges:'Searching edges',manualCorrect:'Please adjust corners manually',autoCorrect:'Auto detected – adjust corners if needed',onePage:'1 page',pages:n=>`${n} pages`,selected:'Selected for PDF',notSelected:'Not in PDF',sortHint:n=>`Page ${n} · drag to sort`,noPages:'No pages available.',noSelected:'No pages selected.',shareUnsupported:'Sharing is not supported by this browser. The PDF was downloaded.',cameraError:'Camera could not be started. Please use HTTPS and allow camera access.'},
+    fr:{subtitle:'Scannez, organisez et partagez des documents en PDF.',scan:'Scan',cameraOff:'📷 Caméra désactivée',tapToScan:'Touchez ici pour scanner un document.',enableCamera:'Activer la caméra',repeat:'Reprendre',next:'Suivant',scanHint:'Après la photo : ajustez les coins si besoin. Puis “Suivant”.',done:'Terminé',pagesExport:'Pages & Export',selectAll:'✓ Tout sélectionner',clearSelection:'Retirer la sélection',deleteSelected:'Supprimer sélection',pdfNamePlaceholder:'Nom du document, ex. facture mai',downloadPdf:'Télécharger PDF',sharePdf:'Partager PDF',opencvReady:'OpenCV prêt',enableCameraLabel:'Activer la caméra',cameraActive:'Caméra active',cameraOffStatus:'Caméra désactivée',searching:'Recherche du document …',detected:'Bords détectés',autoDetected:'Détection automatique',contrast:'Placez le document sur un fond contrasté',searchEdges:'Recherche des bords',manualCorrect:'Veuillez ajuster les coins',autoCorrect:'Détecté automatiquement – ajustez si besoin',onePage:'1 page',pages:n=>`${n} pages`,selected:'Sélectionné pour PDF',notSelected:'Pas dans le PDF',sortHint:n=>`Page ${n} · glisser pour trier`,noPages:'Aucune page disponible.',noSelected:'Aucune page sélectionnée.',shareUnsupported:'Le partage n’est pas pris en charge. Le PDF a été téléchargé.',cameraError:'La caméra n’a pas pu démarrer. Utilisez HTTPS et autorisez la caméra.'},
+    it:{subtitle:'Scansiona, ordina e condividi documenti come PDF.',scan:'Scan',cameraOff:'📷 Fotocamera spenta',tapToScan:'Tocca qui per scansionare un documento.',enableCamera:'Attiva fotocamera',repeat:'Ripeti',next:'Avanti',scanHint:'Dopo la foto: regola gli angoli se necessario. Poi “Avanti”.',done:'Fine',pagesExport:'Pagine & Export',selectAll:'✓ Seleziona tutto',clearSelection:'Rimuovi selezione',deleteSelected:'Elimina selezionati',pdfNamePlaceholder:'Inserisci nome documento, es. fattura maggio',downloadPdf:'Scarica PDF',sharePdf:'Condividi PDF',opencvReady:'OpenCV pronto',enableCameraLabel:'Attiva fotocamera',cameraActive:'Fotocamera attiva',cameraOffStatus:'Fotocamera spenta',searching:'Ricerca documento …',detected:'Bordi documento rilevati',autoDetected:'Rilevato automaticamente',contrast:'Metti il documento su sfondo contrastato',searchEdges:'Ricerca bordi',manualCorrect:'Correggi gli angoli manualmente',autoCorrect:'Rilevato automaticamente – correggi se serve',onePage:'1 pagina',pages:n=>`${n} pagine`,selected:'Selezionato per PDF',notSelected:'Non nel PDF',sortHint:n=>`Pagina ${n} · trascina per ordinare`,noPages:'Nessuna pagina disponibile.',noSelected:'Nessuna pagina selezionata.',shareUnsupported:'Condivisione non supportata. PDF scaricato.',cameraError:'Impossibile avviare la fotocamera. Usa HTTPS e consenti accesso.'},
+    es:{subtitle:'Escanea, organiza y comparte documentos como PDF.',scan:'Escanear',cameraOff:'📷 Cámara apagada',tapToScan:'Toca aquí para escanear un documento.',enableCamera:'Activar cámara',repeat:'Repetir',next:'Siguiente',scanHint:'Después de la foto: ajusta esquinas si hace falta. Luego “Siguiente”.',done:'Listo',pagesExport:'Páginas & Exportar',selectAll:'✓ Seleccionar todo',clearSelection:'Quitar selección',deleteSelected:'Eliminar seleccionadas',pdfNamePlaceholder:'Nombre del documento, ej. factura mayo',downloadPdf:'Descargar PDF',sharePdf:'Compartir PDF',opencvReady:'OpenCV listo',enableCameraLabel:'Activar cámara',cameraActive:'Cámara activa',cameraOffStatus:'Cámara apagada',searching:'Buscando documento …',detected:'Bordes detectados',autoDetected:'Detectado automático',contrast:'Pon el documento sobre fondo con contraste',searchEdges:'Buscando bordes',manualCorrect:'Ajusta las esquinas manualmente',autoCorrect:'Detectado automático – ajusta si hace falta',onePage:'1 página',pages:n=>`${n} páginas`,selected:'Seleccionado para PDF',notSelected:'No en PDF',sortHint:n=>`Página ${n} · arrastra para ordenar`,noPages:'No hay páginas.',noSelected:'No hay páginas seleccionadas.',shareUnsupported:'Compartir no está soportado. El PDF se descargó.',cameraError:'No se pudo iniciar la cámara. Usa HTTPS y permite la cámara.'},
+    pt:{subtitle:'Digitalize, organize e compartilhe documentos em PDF.',scan:'Scan',cameraOff:'📷 Câmera desligada',tapToScan:'Toque aqui para digitalizar um documento.',enableCamera:'Ativar câmera',repeat:'Repetir',next:'Próximo',scanHint:'Após a foto: ajuste os cantos se necessário. Depois “Próximo”.',done:'Concluir',pagesExport:'Páginas & Exportar',selectAll:'✓ Selecionar tudo',clearSelection:'Remover seleção',deleteSelected:'Excluir selecionadas',pdfNamePlaceholder:'Nome do documento, ex. fatura maio',downloadPdf:'Baixar PDF',sharePdf:'Compartilhar PDF',opencvReady:'OpenCV pronto',enableCameraLabel:'Ativar câmera',cameraActive:'Câmera ativa',cameraOffStatus:'Câmera desligada',searching:'Procurando documento …',detected:'Bordas detectadas',autoDetected:'Detectado automaticamente',contrast:'Coloque o documento em fundo contrastante',searchEdges:'Procurando bordas',manualCorrect:'Ajuste os cantos manualmente',autoCorrect:'Detectado automaticamente – ajuste se necessário',onePage:'1 página',pages:n=>`${n} páginas`,selected:'Selecionado para PDF',notSelected:'Fora do PDF',sortHint:n=>`Página ${n} · arraste para ordenar`,noPages:'Nenhuma página disponível.',noSelected:'Nenhuma página selecionada.',shareUnsupported:'Compartilhar não é suportado. O PDF foi baixado.',cameraError:'Não foi possível iniciar a câmera. Use HTTPS e permita a câmera.'},
+    tr:{subtitle:'Belgeleri tarayın, sıralayın ve PDF olarak paylaşın.',scan:'Tara',cameraOff:'📷 Kamera kapalı',tapToScan:'Belge taramak için buraya dokunun.',enableCamera:'Kamerayı aç',repeat:'Tekrarla',next:'İleri',scanHint:'Fotoğraftan sonra gerekirse köşeleri düzeltin. Sonra “İleri”.',done:'Bitti',pagesExport:'Sayfalar & Dışa aktar',selectAll:'✓ Tümünü seç',clearSelection:'Seçimi kaldır',deleteSelected:'Seçilenleri sil',pdfNamePlaceholder:'Belge adı girin, örn. Mayıs faturası',downloadPdf:'PDF indir',sharePdf:'PDF paylaş',opencvReady:'OpenCV hazır',enableCameraLabel:'Kamerayı aç',cameraActive:'Kamera aktif',cameraOffStatus:'Kamera kapalı',searching:'Belge aranıyor …',detected:'Belge kenarları bulundu',autoDetected:'Otomatik algılandı',contrast:'Belgeyi kontrast arka plana koyun',searchEdges:'Kenarlar aranıyor',manualCorrect:'Köşeleri elle düzeltin',autoCorrect:'Otomatik algılandı – gerekirse düzeltin',onePage:'1 sayfa',pages:n=>`${n} sayfa`,selected:'PDF için seçildi',notSelected:'PDF’de değil',sortHint:n=>`Sayfa ${n} · sıralamak için sürükle`,noPages:'Sayfa yok.',noSelected:'Seçili sayfa yok.',shareUnsupported:'Paylaşım desteklenmiyor. PDF indirildi.',cameraError:'Kamera başlatılamadı. HTTPS kullanın ve kameraya izin verin.'}
+  };
+
+  window.onOpenCvReady = function(){ cv.onRuntimeInitialized = () => { cvReady=true; statusEl.textContent=t('opencvReady'); statusEl.className='status good'; detectLabel.textContent=t('enableCameraLabel'); setButtons(); }; };
+  function defaultPoints(){return [{x:10,y:12},{x:90,y:12},{x:90,y:88},{x:10,y:88}]}
+  function t(key,...args){const v=(i18n[currentLang]||i18n.de)[key]??i18n.de[key];return typeof v==='function'?v(...args):v}
+  function detectLang(){const base=(navigator.language||'de').slice(0,2).toLowerCase();return i18n[base]?base:'en'}
+  function applyLang(lang){currentLang=lang==='auto'?detectLang():lang;document.documentElement.lang=currentLang;document.documentElement.dir=currentLang==='ar'?'rtl':'ltr';document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t(el.dataset.i18n));document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>el.placeholder=t(el.dataset.i18nPlaceholder));setButtons();if(pages.length)renderPages();}
+  function setButtons(){ const editing=!!currentImage; captureBtn.disabled=!(cvReady&&streamStarted&&!editing); repeatBtn.disabled=!editing; nextBtn.disabled=!editing; stopBtn.disabled=!streamStarted; startBtn.disabled=streamStarted||!cvReady; emptyStartBtn.disabled=streamStarted||!cvReady; const txt=pages.length===1?t('onePage'):t('pages',pages.length); pageCount.textContent=txt; pageCountTop.textContent=txt; cameraEmpty.classList.toggle('hidden',streamStarted||editing); updateThumb(); }
+  function updateThumb(){ const last=pages[pages.length-1]; thumb.innerHTML=last?`<img src="${last.dataUrl}"><span class="count">${pages.length}</span>`:`<span class="count">0</span>`; }
+
+  async function startCamera(){ try{ const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false}); video.srcObject=stream; streamStarted=true; statusEl.textContent=t('cameraActive'); statusEl.className='status good'; detectLabel.textContent=t('searching'); setButtons(); startLoop(); }catch(e){ alert(t('cameraError')); } }
+  function stopCamera(){ if(video.srcObject){video.srcObject.getTracks().forEach(t=>t.stop());video.srcObject=null} clearInterval(detectTimer); streamStarted=false; points=defaultPoints(); updatePolygon(points); statusEl.textContent=cvReady?t('cameraOffStatus'):'OpenCV lädt …'; statusEl.className='status'; detectLabel.textContent=t('enableCameraLabel'); setButtons(); }
+  function startLoop(){ clearInterval(detectTimer); detectTimer=setInterval(()=>{ if(!cvReady||!streamStarted||currentImage||!video.videoWidth)return; const found=detectDocument(video,360); if(found){points=smooth(points,found,.45); updatePolygon(points); detectLabel.textContent=t('detected'); statusEl.textContent=t('autoDetected'); statusEl.className='status good'}else{detectLabel.textContent=t('contrast'); statusEl.textContent=t('searchEdges'); statusEl.className='status'} },450); }
+
+  function detectDocument(source,targetWidth=480){ if(!cvReady)return null; const sw=source.videoWidth||source.naturalWidth||source.width, sh=source.videoHeight||source.naturalHeight||source.height; if(!sw||!sh)return null; const scale=targetWidth/sw,w=Math.round(sw*scale),h=Math.round(sh*scale); workCanvas.width=w; workCanvas.height=h; workCtx.drawImage(source,0,0,w,h); let src,gray,blurred,edges,contours,hierarchy; try{ src=cv.imread(workCanvas); gray=new cv.Mat(); blurred=new cv.Mat(); edges=new cv.Mat(); contours=new cv.MatVector(); hierarchy=new cv.Mat(); cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY); cv.GaussianBlur(gray,blurred,new cv.Size(5,5),0); cv.Canny(blurred,edges,60,160); cv.dilate(edges,edges,cv.Mat.ones(3,3,cv.CV_8U)); cv.findContours(edges,contours,hierarchy,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE); let best=null,bestArea=0,imgArea=w*h; for(let i=0;i<contours.size();i++){ const contour=contours.get(i),area=cv.contourArea(contour); if(area<imgArea*.10){contour.delete();continue} const peri=cv.arcLength(contour,true),approx=new cv.Mat(); cv.approxPolyDP(contour,approx,.025*peri,true); if(approx.rows===4&&area>bestArea&&cv.isContourConvex(approx)){ const pts=[]; for(let r=0;r<4;r++)pts.push({x:approx.intPtr(r,0)[0],y:approx.intPtr(r,0)[1]}); const ordered=orderPoints(pts).map(p=>({x:p.x/w*100,y:p.y/h*100})); if(isGoodQuad(ordered)){best=ordered;bestArea=area} } approx.delete(); contour.delete(); } return best?keepSafe(best):null; }catch(e){return null}finally{[src,gray,blurred,edges,contours,hierarchy].forEach(m=>m&&m.delete&&m.delete())} }
+  function orderPoints(pts){ const arr=[...pts],sum=p=>p.x+p.y,diff=p=>p.y-p.x; return [arr.reduce((a,b)=>sum(a)<sum(b)?a:b),arr.reduce((a,b)=>diff(a)<diff(b)?a:b),arr.reduce((a,b)=>sum(a)>sum(b)?a:b),arr.reduce((a,b)=>diff(a)>diff(b)?a:b)] }
+  function isGoodQuad(p){const xs=p.map(v=>v.x),ys=p.map(v=>v.y),w=Math.max(...xs)-Math.min(...xs),h=Math.max(...ys)-Math.min(...ys);return w>32&&h>25&&w<96&&h<96}
+  function keepSafe(p){return p.map(v=>({x:Math.max(4,Math.min(96,v.x)),y:Math.max(4,Math.min(96,v.y))}))}
+  function smooth(a,b,t){return a.map((p,i)=>({x:p.x*(1-t)+b[i].x*t,y:p.y*(1-t)+b[i].y*t}))}
+  function updatePolygon(p){
+    updateOverlayRect();
+    poly.setAttribute('points',p.map(v=>`${v.x},${v.y}`).join(' '));
+  }
+  function updateOverlayRect(){
+    if(!video.videoWidth||!video.videoHeight){
+      document.querySelector('.overlay').style.cssText='position:absolute;inset:0;z-index:4;pointer-events:none';
+      return;
+    }
+    const overlay=document.querySelector('.overlay');
+    const cw=cameraWrap.clientWidth,ch=cameraWrap.clientHeight;
+    const videoRatio=video.videoWidth/video.videoHeight;
+    const boxRatio=cw/ch;
+    let w,h,left,top;
+    if(boxRatio>videoRatio){
+      h=ch; w=h*videoRatio; left=(cw-w)/2; top=0;
+    }else{
+      w=cw; h=w/videoRatio; left=0; top=(ch-h)/2;
+    }
+    overlay.style.left=left+'px'; overlay.style.top=top+'px'; overlay.style.width=w+'px'; overlay.style.height=h+'px'; overlay.style.right='auto'; overlay.style.bottom='auto';
+  }
+
+  function capture(){ const c=document.createElement('canvas'); c.width=video.videoWidth; c.height=video.videoHeight; c.getContext('2d').drawImage(video,0,0); loadImageForCrop(c.toDataURL('image/jpeg',.95)); }
+  function loadImageForCrop(dataUrl){ const img=new Image(); img.onload=()=>{ currentImage=img; editCanvas.width=img.width; editCanvas.height=img.height; const found=detectDocument(img,640); const use=found||points||defaultPoints(); editPoints=use.map(p=>({x:img.width*p.x/100,y:img.height*p.y/100})); video.style.display='none'; editCanvas.style.display='block'; polySvg.style.display='none'; cameraWrap.classList.add('editing'); detectLabel.textContent=found?t('autoCorrect'):t('manualCorrect'); setButtons(); drawEditor(); }; img.src=dataUrl; }
+  function drawEditor(){ editCtx.clearRect(0,0,editCanvas.width,editCanvas.height); editCtx.drawImage(currentImage,0,0); editCtx.fillStyle='rgba(0,0,0,.42)'; editCtx.fillRect(0,0,editCanvas.width,editCanvas.height); editCtx.save(); editCtx.beginPath(); editPoints.forEach((p,i)=>i?editCtx.lineTo(p.x,p.y):editCtx.moveTo(p.x,p.y)); editCtx.closePath(); editCtx.clip(); editCtx.drawImage(currentImage,0,0); editCtx.restore(); editCtx.strokeStyle='#0ea5e9'; editCtx.lineWidth=Math.max(5,editCanvas.width/260); editCtx.beginPath(); editPoints.forEach((p,i)=>i?editCtx.lineTo(p.x,p.y):editCtx.moveTo(p.x,p.y)); editCtx.closePath(); editCtx.stroke(); positionCorners(); }
+  function positionCorners(){ const rect=editCanvas.getBoundingClientRect(),wrap=cameraWrap.getBoundingClientRect(); corners.forEach((el,i)=>{const p=editPoints[i],x=rect.left-wrap.left+p.x/editCanvas.width*rect.width,y=rect.top-wrap.top+p.y/editCanvas.height*rect.height; el.style.left=Math.max(18,Math.min(cameraWrap.clientWidth-18,x))+'px'; el.style.top=Math.max(18,Math.min(cameraWrap.clientHeight-18,y))+'px';}); }
+  function clientToCanvas(e){const r=editCanvas.getBoundingClientRect();return{x:Math.max(0,Math.min(editCanvas.width,(e.clientX-r.left)/r.width*editCanvas.width)),y:Math.max(0,Math.min(editCanvas.height,(e.clientY-r.top)/r.height*editCanvas.height))}}
+  corners.forEach(el=>el.addEventListener('pointerdown',e=>{dragging=Number(el.dataset.i);el.setPointerCapture(e.pointerId)})); window.addEventListener('pointermove',e=>{if(dragging===null||!currentImage)return;editPoints[dragging]=clientToCanvas(e);drawEditor()}); window.addEventListener('pointerup',()=>dragging=null); window.addEventListener('resize',()=>{positionCorners();updateOverlayRect();});
+
+  function acceptScan(){ const out=warpDocument(currentImage,editPoints); enhance(out); pages.push({id:crypto.randomUUID(),dataUrl:out.toDataURL('image/jpeg',.95),selected:true}); resetEditor(); renderPages(); }
+  function resetEditor(){ currentImage=null; editCanvas.style.display='none'; video.style.display='block'; polySvg.style.display='block'; cameraWrap.classList.remove('editing'); detectLabel.textContent=streamStarted?t('searching'):t('enableCameraLabel'); setButtons(); }
+  function warpDocument(img,pts){ const [tl,tr,br,bl]=orderPoints(pts); const wA=Math.hypot(br.x-bl.x,br.y-bl.y),wB=Math.hypot(tr.x-tl.x,tr.y-tl.y),hA=Math.hypot(tr.x-br.x,tr.y-br.y),hB=Math.hypot(tl.x-bl.x,tl.y-bl.y); let maxW=Math.round(Math.max(wA,wB)),maxH=Math.round(Math.max(hA,hB)); const longest=Math.max(maxW,maxH),shortest=Math.min(maxW,maxH); if(longest>1800){const s=1800/longest;maxW=Math.round(maxW*s);maxH=Math.round(maxH*s)}else if(shortest<700){const s=700/shortest;maxW=Math.round(maxW*s);maxH=Math.round(maxH*s)} const srcCanvas=document.createElement('canvas'); srcCanvas.width=img.width; srcCanvas.height=img.height; srcCanvas.getContext('2d').drawImage(img,0,0); if(!cvReady)return fallbackCrop(img,pts); let src,dst,srcTri,dstTri,M; try{src=cv.imread(srcCanvas);dst=new cv.Mat();srcTri=cv.matFromArray(4,1,cv.CV_32FC2,[tl.x,tl.y,tr.x,tr.y,br.x,br.y,bl.x,bl.y]);dstTri=cv.matFromArray(4,1,cv.CV_32FC2,[0,0,maxW-1,0,maxW-1,maxH-1,0,maxH-1]);M=cv.getPerspectiveTransform(srcTri,dstTri);cv.warpPerspective(src,dst,M,new cv.Size(maxW,maxH),cv.INTER_LINEAR,cv.BORDER_CONSTANT,new cv.Scalar());const out=document.createElement('canvas');out.width=maxW;out.height=maxH;cv.imshow(out,dst);return out}catch(e){return fallbackCrop(img,pts)}finally{[src,dst,srcTri,dstTri,M].forEach(m=>m&&m.delete&&m.delete())} }
+  function fallbackCrop(img,pts){const xs=pts.map(p=>p.x),ys=pts.map(p=>p.y),minX=Math.max(0,Math.min(...xs)),minY=Math.max(0,Math.min(...ys)),maxX=Math.min(img.width,Math.max(...xs)),maxY=Math.min(img.height,Math.max(...ys));const out=document.createElement('canvas');out.width=Math.max(1,maxX-minX);out.height=Math.max(1,maxY-minY);out.getContext('2d').drawImage(img,minX,minY,out.width,out.height,0,0,out.width,out.height);return out}
+  function enhance(canvas){const ctx=canvas.getContext('2d'),im=ctx.getImageData(0,0,canvas.width,canvas.height),d=im.data;for(let i=0;i<d.length;i+=4){for(let c=0;c<3;c++){let v=(d[i+c]-128)*1.12+136;d[i+c]=Math.max(0,Math.min(255,v))}}ctx.putImageData(im,0,0)}
+
+  function renderPages(){
+    pagesEl.innerHTML='';
+    pages.forEach((page,index)=>{
+      const card=document.createElement('div');
+      card.className='page-card'+(page.selected?' selected':'');
+      card.dataset.index=index;
+      card.innerHTML=`<span class="badge">${index+1}</span><img src="${page.dataUrl}" alt="${t('sortHint',index+1)}"><small>${t('sortHint',index+1)}</small><div class="drag-handle" data-drag-handle="true">☰ Ziehen</div><label class="page-select"><input type="checkbox" ${page.selected?'checked':''}><span>${page.selected?t('selected'):t('notSelected')}</span></label><div class="page-actions"><button data-action="up">↑</button><button data-action="down">↓</button><button class="delete" data-action="delete">×</button></div>`;
+      const handle=card.querySelector('[data-drag-handle]');
+      handle.addEventListener('pointerdown',e=>startPageDrag(e,index,card));
+      card.querySelector('input').onchange=e=>{page.selected=e.target.checked;renderPages()};
+      card.querySelector('[data-action="up"]').onclick=()=>movePage(index,-1);
+      card.querySelector('[data-action="down"]').onclick=()=>movePage(index,1);
+      card.querySelector('[data-action="delete"]').onclick=()=>{pages.splice(index,1);renderPages()};
+      pagesEl.appendChild(card);
+    });
+    setButtons();
+  }
+  let pageDrag=null;
+  function startPageDrag(e,index,card){
+    e.preventDefault();
+    e.stopPropagation();
+    const img=card.querySelector('img');
+    const ghost=img.cloneNode(true);
+    ghost.className='drag-ghost';
+    document.body.appendChild(ghost);
+    card.classList.add('dragging');
+    pageDrag={from:index,card,ghost};
+    moveGhost(e.clientX,e.clientY);
+    card.setPointerCapture?.(e.pointerId);
+    window.addEventListener('pointermove',onPageDragMove);
+    window.addEventListener('pointerup',onPageDragEnd,{once:true});
+    window.addEventListener('pointercancel',onPageDragEnd,{once:true});
+  }
+  function moveGhost(x,y){if(pageDrag?.ghost){pageDrag.ghost.style.left=x+'px';pageDrag.ghost.style.top=y+'px'}}
+  function onPageDragMove(e){
+    if(!pageDrag)return;
+    moveGhost(e.clientX,e.clientY);
+    const target=document.elementFromPoint(e.clientX,e.clientY)?.closest('.page-card');
+    document.querySelectorAll('.drop-target').forEach(el=>el.classList.remove('drop-target'));
+    if(target&&target!==pageDrag.card)target.classList.add('drop-target');
+  }
+  function onPageDragEnd(e){
+    if(!pageDrag)return;
+    const target=document.elementFromPoint(e.clientX,e.clientY)?.closest('.page-card');
+    const from=pageDrag.from;
+    pageDrag.card.classList.remove('dragging');
+    pageDrag.ghost.remove();
+    document.querySelectorAll('.drop-target').forEach(el=>el.classList.remove('drop-target'));
+    pageDrag=null;
+    window.removeEventListener('pointermove',onPageDragMove);
+    if(target)reorderPage(from,Number(target.dataset.index));
+  }
+  function reorderPage(from,to){if(!Number.isFinite(from)||!Number.isFinite(to)||from===to)return;const item=pages.splice(from,1)[0];pages.splice(to,0,item);renderPages()}
+  function movePage(i,d){const n=i+d;if(n<0||n>=pages.length)return;[pages[i],pages[n]]=[pages[n],pages[i]];renderPages()}
+  async function makePdfBlob(){ if(!pages.length)throw new Error(t('noPages')); const selected=pages.filter(p=>p.selected); if(!selected.length)throw new Error(t('noSelected')); const {jsPDF}=window.jspdf,pdf=new jsPDF({unit:'pt',format:'a4'}); for(let i=0;i<selected.length;i++){if(i)pdf.addPage(); const img=await loadImg(selected[i].dataUrl),pw=pdf.internal.pageSize.getWidth(),ph=pdf.internal.pageSize.getHeight(),r=Math.min(pw/img.width,ph/img.height),w=img.width*r,h=img.height*r; pdf.addImage(selected[i].dataUrl,'JPEG',(pw-w)/2,(ph-h)/2,w,h)} return pdf.output('blob') }
+  function loadImg(src){return new Promise(res=>{const img=new Image();img.onload=()=>res(img);img.src=src})} function pdfName(){return (pdfNameInput.value||'scan').trim().replace(/[^a-z0-9-_ ]/gi,'_')||'scan'}
+  async function downloadPdf(){try{const blob=await makePdfBlob(),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`${pdfName()}.pdf`;a.click();URL.revokeObjectURL(url)}catch(e){alert(e.message)}}
+  async function sharePdf(){try{const blob=await makePdfBlob(),file=new File([blob],`${pdfName()}.pdf`,{type:'application/pdf'}); if(navigator.canShare&&navigator.canShare({files:[file]})) await navigator.share({files:[file],title:pdfName(),text:'Gescanntes PDF'}); else {await downloadPdf();alert(t('shareUnsupported'))}}catch(e){alert(e.message)}}
+
+  langSelect.onchange=()=>applyLang(langSelect.value);
+  langSelect.value='auto';
+  applyLang('auto');
+  startBtn.onclick=startCamera; emptyStartBtn.onclick=startCamera; stopBtn.onclick=stopCamera; captureBtn.onclick=capture; repeatBtn.onclick=resetEditor; nextBtn.onclick=acceptScan; doneBtn.onclick=()=>document.getElementById('exportPanel').scrollIntoView({behavior:'smooth',block:'start'}); selectAllBtn.onclick=()=>{pages.forEach(p=>p.selected=true);renderPages()}; clearSelectBtn.onclick=()=>{pages.forEach(p=>p.selected=false);renderPages()}; deleteSelectedBtn.onclick=()=>{pages=pages.filter(p=>!p.selected);renderPages()}; downloadPdfBtn.onclick=downloadPdf; sharePdfBtn.onclick=sharePdf; updatePolygon(points); setButtons();
+</script>
 </body>
 </html>
