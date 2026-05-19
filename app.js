@@ -81,6 +81,7 @@ if (shareBtn) {
   shareBtn.style.display = 'block';
   shareBtn.classList.add('is-visible');
   shareBtn.disabled = false;
+  shareBtn.removeAttribute('disabled');
 }
 
 languageSelect.value = 'auto';
@@ -437,6 +438,7 @@ function showShareButton() {
   shareBtn.style.display = 'block';
   shareBtn.classList.add('is-visible');
   shareBtn.disabled = false;
+  shareBtn.removeAttribute('disabled');
 }
 
 function hideShareButton() {
@@ -444,6 +446,7 @@ function hideShareButton() {
   shareBtn.style.display = 'block';
   shareBtn.classList.add('is-visible');
   shareBtn.disabled = false;
+  shareBtn.removeAttribute('disabled');
 }
 
 async function shareLastPdf() {
