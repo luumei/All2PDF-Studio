@@ -218,12 +218,10 @@ fileList.addEventListener('click', event => {
     setStatus(activeMoveIndex === null
       ? t('ready')
       : currentLang === 'de'
-        ? 'Tippe jetzt auf die Zielposition.'
-        : 'Now tap the target position.');
+        ? 'Tippe auf die Zielposition oder ziehe die Zahl.'
+        : 'Tap the target position or drag the number.');
     renderFileList();
   }
-  if (button.dataset.action === 'up') moveFile(index, -1);
-  if (button.dataset.action === 'down') moveFile(index, 1);
   if (button.dataset.action === 'remove') removeFile(index);
 });
 
@@ -363,16 +361,16 @@ function renderFileList() {
     const file = item.file;
     const card = document.createElement('div');
     card.className = 'file-card';
-    card.draggable = !window.matchMedia('(pointer: coarse)').matches;
+    card.draggable = false;
     card.dataset.index = index;
 
     const badge = item.previewType === 'pdf' ? 'PDF' : item.previewType === 'doc' ? getDocumentBadge(item.file) : 'IMG';
     const previewLabel = item.previewType === 'pdf' ? t('pdfPreview') : item.previewType === 'doc' ? t('docPreview') : t('imagePreview');
 
     card.innerHTML = `
-      <div class="order-badge">${index + 1}</div>
+      <button class="order-badge move-handle" data-action="move" data-index="${index}" title="Move">${index + 1}</button>
       <div class="preview" title="${previewLabel}">
-        ${item.previewUrl ? `<img src="${item.previewUrl}" alt="${previewLabel}">` : `<div class="preview-placeholder">${item.previewFailed ? badge : '…'}</div>`}
+        ${item.previewUrl ? `<img src="${item.previewUrl}" alt="${previewLabel}">` : `<div class="preview-placeholder">…</div>`}
         <div class="preview-badge">${badge}</div>
       </div>
       <div class="file-info">
@@ -381,43 +379,14 @@ function renderFileList() {
         <div class="file-help">${item.previewUrl ? previewLabel : t('previewLoading')}</div>
       </div>
       <div class="file-tools">
-        <label class="position-row">
-          <span>${t('position')}</span>
-          <input class="position-input" type="number" min="1" max="${selectedItems.length}" value="${index + 1}" data-index="${index}">
-        </label>
         <div class="file-buttons">
-          <button class="btn btn-move" data-action="move" data-index="${index}" title="Move">↕</button>
-          <button class="btn btn-soft" data-action="up" data-index="${index}">${t('up')}</button>
-          <button class="btn btn-soft" data-action="down" data-index="${index}">${t('down')}</button>
           <button class="btn btn-danger" data-action="remove" data-index="${index}">${t('remove')}</button>
         </div>
       </div>
     `;
 
-    card.addEventListener('dragstart', () => {
-      draggedIndex = index;
-      card.classList.add('dragging');
-    });
-
-    card.addEventListener('dragend', () => {
-      draggedIndex = null;
-      card.classList.remove('dragging');
-      document.querySelectorAll('.file-card').forEach(el => el.classList.remove('drag-over'));
-    });
-
-    card.addEventListener('dragover', event => {
-      event.preventDefault();
-      card.classList.add('drag-over');
-    });
-
-    card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
-
-    card.addEventListener('drop', event => {
-      event.preventDefault();
-      event.stopPropagation();
-      card.classList.remove('drag-over');
-      reorderFiles(draggedIndex, Number(card.dataset.index));
-    });
+    const handle = card.querySelector('.move-handle');
+    setupHandleDrag(handle, card, index);
 
     card.addEventListener('click', event => {
       if (event.target.closest('button, input')) return;
@@ -436,6 +405,54 @@ function renderFileList() {
 
 function setupLongPressDrag(card, index) {
   return;
+}
+
+function setupHandleDrag(handle, card, index) {
+  let startX = 0;
+  let startY = 0;
+  let dragging = false;
+
+  handle.addEventListener('pointerdown', event => {
+    event.preventDefault();
+    event.stopPropagation();
+    startX = event.clientX;
+    startY = event.clientY;
+    dragging = true;
+    handle.setPointerCapture(event.pointerId);
+    startTouchDrag(card, index, event.clientX, event.clientY);
+  });
+
+  handle.addEventListener('pointermove', event => {
+    if (!dragging || !touchDrag) return;
+    event.preventDefault();
+    moveTouchDrag(event.clientX, event.clientY);
+  });
+
+  handle.addEventListener('pointerup', event => {
+    if (!dragging) return;
+    event.preventDefault();
+    dragging = false;
+
+    const moved = Math.hypot(event.clientX - startX, event.clientY - startY);
+    if (moved < 6) {
+      cancelTouchDrag();
+      activeMoveIndex = activeMoveIndex === index ? null : index;
+      setStatus(activeMoveIndex === null
+        ? t('ready')
+        : currentLang === 'de'
+          ? 'Tippe auf die Zielposition.'
+          : 'Tap the target position.');
+      renderFileList();
+      return;
+    }
+
+    finishTouchDrag();
+  });
+
+  handle.addEventListener('pointercancel', () => {
+    dragging = false;
+    cancelTouchDrag();
+  });
 }
 
 function startTouchDrag(card, index, x, y) {
