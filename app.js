@@ -434,7 +434,7 @@ function showShareButton() {
 
 function hideShareButton() {
   if (!shareBtn) return;
-  shareBtn.classList.remove('is-visible');
+  shareBtn.classList.add('is-visible');
   shareBtn.disabled = true;
 }
 
