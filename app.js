@@ -298,32 +298,55 @@ async function createPreview(item, requestId = item.id) {
     if (item.file.type.startsWith('image/')) {
       if (item.deleted || item.id !== requestId) return;
       item.previewUrl = URL.createObjectURL(item.file);
+      renderFileList();
       return;
     }
 
     if (item.file.type === 'application/pdf') {
-      const bytes = await item.file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
-      const page = await pdf.getPage(1);
-      const viewport = page.getViewport({ scale: 0.35 });
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-      await page.render({ canvasContext: context, viewport }).promise;
+      item.previewUrl = await createPdfPreview(item.file);
       if (item.deleted || item.id !== requestId) return;
-      item.previewUrl = canvas.toDataURL('image/png');
+      renderFileList();
+      return;
     }
 
     if (isDocumentFile(item.file)) {
       const preview = await createDocumentPreview(item.file);
       if (item.deleted || item.id !== requestId) return;
       item.previewUrl = preview;
+      renderFileList();
     }
   } catch (error) {
-    console.error(error);
+    console.error('Preview error:', error);
     item.previewUrl = '';
+    item.previewFailed = true;
+    renderFileList();
   }
+}
+
+async function createPdfPreview(file) {
+  const bytes = await file.arrayBuffer();
+  const loadingTask = pdfjsLib.getDocument({ data: bytes });
+  const pdf = await loadingTask.promise;
+  const page = await pdf.getPage(1);
+
+  const baseViewport = page.getViewport({ scale: 1 });
+  const targetWidth = 420;
+  const scale = targetWidth / baseViewport.width;
+  const viewport = page.getViewport({ scale });
+
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d', { alpha: false });
+  canvas.width = Math.ceil(viewport.width);
+  canvas.height = Math.ceil(viewport.height);
+
+  context.fillStyle = '#ffffff';
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  await page.render({ canvasContext: context, viewport }).promise;
+  const imageUrl = canvas.toDataURL('image/png');
+
+  if (pdf.destroy) await pdf.destroy();
+  return imageUrl;
 }
 
 function renderFileList() {
@@ -349,7 +372,7 @@ function renderFileList() {
     card.innerHTML = `
       <div class="order-badge">${index + 1}</div>
       <div class="preview" title="${previewLabel}">
-        ${item.previewUrl ? `<img src="${item.previewUrl}" alt="${previewLabel}">` : `<div class="preview-placeholder">…</div>`}
+        ${item.previewUrl ? `<img src="${item.previewUrl}" alt="${previewLabel}">` : `<div class="preview-placeholder">${item.previewFailed ? badge : '…'}</div>`}
         <div class="preview-badge">${badge}</div>
       </div>
       <div class="file-info">
