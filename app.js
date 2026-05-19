@@ -16,7 +16,7 @@ const translations = {
     ready: 'Bereit.',
     create: 'PDF erstellen',
     files: 'Reihenfolge & Vorschau',
-    sortHint: 'Ziehe Karten hoch/runter oder gib direkt die Zielposition ein.',
+    sortHint: 'Zahl oben rechts ziehen, um die Reihenfolge zu ändern. X löscht eine Datei.',
     noFiles: 'Noch keine Dateien ausgewählt. Ziehe Dateien oben hinein.',
     count: n => `${n} Datei${n === 1 ? '' : 'en'}`,
     chooseFirst: 'Bitte zuerst Dateien auswählen.',
@@ -24,13 +24,13 @@ const translations = {
     done: 'Fertig! PDF wurde heruntergeladen.',
     error: 'Fehler beim Erstellen des PDFs.',
     remove: 'Entfernen',
-    up: 'Hoch',
-    down: 'Runter',
-    position: 'Position',
     previewLoading: 'Vorschau lädt',
     pdfPreview: 'PDF-Seite 1',
     imagePreview: 'Bildvorschau',
-    docPreview: 'Dokument-Vorschau'
+    docPreview: 'Dokument-Vorschau',
+    next: 'Weiter',
+    share: 'PDF teilen',
+    shareUnsupported: 'Teilen wird von diesem Browser nicht unterstützt.'
   },
   en: {
     appName: 'PDF Studio',
@@ -43,7 +43,7 @@ const translations = {
     ready: 'Ready.',
     create: 'Create PDF',
     files: 'Order & Preview',
-    sortHint: 'Drag cards up/down or enter the target position directly.',
+    sortHint: 'Drag the number in the top-right corner to reorder. X removes a file.',
     noFiles: 'No files selected yet. Drop files above.',
     count: n => `${n} file${n === 1 ? '' : 's'}`,
     chooseFirst: 'Please select files first.',
@@ -51,13 +51,13 @@ const translations = {
     done: 'Done! PDF was downloaded.',
     error: 'Error while creating the PDF.',
     remove: 'Remove',
-    up: 'Up',
-    down: 'Down',
-    position: 'Position',
     previewLoading: 'Preview loading',
     pdfPreview: 'PDF page 1',
     imagePreview: 'Image preview',
-    docPreview: 'Document preview'
+    docPreview: 'Document preview',
+    next: 'Next',
+    share: 'Share PDF',
+    shareUnsupported: 'Sharing is not supported by this browser.'
   },
   fr: {
     appName: 'PDF Studio',
@@ -70,7 +70,7 @@ const translations = {
     ready: 'Prêt.',
     create: 'Créer le PDF',
     files: 'Ordre & aperçu',
-    sortHint: 'Glissez les cartes ou entrez directement la position souhaitée.',
+    sortHint: 'Faites glisser le numéro en haut à droite pour changer l’ordre. X supprime un fichier.',
     noFiles: 'Aucun fichier sélectionné. Déposez des fichiers ci-dessus.',
     count: n => `${n} fichier${n === 1 ? '' : 's'}`,
     chooseFirst: 'Veuillez d’abord sélectionner des fichiers.',
@@ -78,13 +78,13 @@ const translations = {
     done: 'Terminé ! Le PDF a été téléchargé.',
     error: 'Erreur lors de la création du PDF.',
     remove: 'Supprimer',
-    up: 'Monter',
-    down: 'Descendre',
-    position: 'Position',
     previewLoading: 'Aperçu en cours',
     pdfPreview: 'PDF page 1',
     imagePreview: 'Aperçu image',
-    docPreview: 'Aperçu document'
+    docPreview: 'Aperçu document',
+    next: 'Suivant',
+    share: 'Partager le PDF',
+    shareUnsupported: 'Le partage n’est pas pris en charge par ce navigateur.'
   },
   it: {
     appName: 'PDF Studio',
@@ -97,7 +97,7 @@ const translations = {
     ready: 'Pronto.',
     create: 'Crea PDF',
     files: 'Ordine e anteprima',
-    sortHint: 'Trascina le schede o inserisci direttamente la posizione.',
+    sortHint: 'Trascina il numero in alto a destra per riordinare. X rimuove un file.',
     noFiles: 'Nessun file selezionato. Trascina i file sopra.',
     count: n => `${n} file`,
     chooseFirst: 'Seleziona prima dei file.',
@@ -105,13 +105,13 @@ const translations = {
     done: 'Fatto! Il PDF è stato scaricato.',
     error: 'Errore durante la creazione del PDF.',
     remove: 'Rimuovi',
-    up: 'Su',
-    down: 'Giù',
-    position: 'Posizione',
     previewLoading: 'Anteprima in caricamento',
     pdfPreview: 'PDF pagina 1',
     imagePreview: 'Anteprima immagine',
-    docPreview: 'Anteprima documento'
+    docPreview: 'Anteprima documento',
+    next: 'Avanti',
+    share: 'Condividi PDF',
+    shareUnsupported: 'La condivisione non è supportata da questo browser.'
   },
   es: {
     appName: 'PDF Studio',
@@ -124,7 +124,7 @@ const translations = {
     ready: 'Listo.',
     create: 'Crear PDF',
     files: 'Orden y vista previa',
-    sortHint: 'Arrastra tarjetas o escribe directamente la posición deseada.',
+    sortHint: 'Arrastra el número arriba a la derecha para ordenar. X elimina un archivo.',
     noFiles: 'Todavía no hay archivos seleccionados. Suelta archivos arriba.',
     count: n => `${n} archivo${n === 1 ? '' : 's'}`,
     chooseFirst: 'Selecciona archivos primero.',
@@ -132,40 +132,38 @@ const translations = {
     done: '¡Listo! El PDF se ha descargado.',
     error: 'Error al crear el PDF.',
     remove: 'Eliminar',
-    up: 'Subir',
-    down: 'Bajar',
-    position: 'Posición',
     previewLoading: 'Cargando vista',
     pdfPreview: 'PDF página 1',
     imagePreview: 'Vista de imagen',
-    docPreview: 'Vista de documento'
+    docPreview: 'Vista de documento',
+    next: 'Siguiente',
+    share: 'Compartir PDF',
+    shareUnsupported: 'Este navegador no admite compartir.'
   }
 };
 
 let selectedItems = [];
 let currentLang = getSystemLanguage();
-let draggedIndex = null;
-let touchDrag = null;
-let activeMoveIndex = null;
+let dragState = null;
+let lastPdfFile = null;
+let nextBtn = null;
+let shareBtn = null;
+let finalActions = null;
 
 const fileInput = document.getElementById('fileInput');
 const fileList = document.getElementById('fileList');
 const statusBox = document.getElementById('status');
 const dropZone = document.getElementById('dropZone');
 const createBtn = document.getElementById('createBtn');
-let nextBtn = null;
-let shareBtn = null;
-let finalActions = null;
-let lastPdfFile = null;
 const clearBtn = document.getElementById('clearBtn');
 const languageSelect = document.getElementById('languageSelect');
 const fileCount = document.getElementById('fileCount');
 
 languageSelect.value = 'auto';
 applyLanguage(currentLang);
-injectFixedGalleryStyles();
-renderFileList();
+injectCleanGalleryStyles();
 setupActionButtons();
+renderFileList();
 
 fileInput.addEventListener('change', event => {
   addFiles(event.target.files);
@@ -183,10 +181,10 @@ clearBtn.addEventListener('click', () => {
 languageSelect.addEventListener('change', () => {
   currentLang = languageSelect.value === 'auto' ? getSystemLanguage() : languageSelect.value;
   applyLanguage(currentLang);
-  if (nextBtn) nextBtn.textContent = currentLang === 'de' ? 'Weiter' : 'Next';
-  if (shareBtn) shareBtn.textContent = currentLang === 'de' ? 'PDF teilen' : 'Share PDF';
-  renderFileList();
+  if (nextBtn) nextBtn.textContent = t('next');
+  if (shareBtn) shareBtn.textContent = t('share');
   setStatus(t('ready'));
+  renderFileList();
 });
 
 document.addEventListener('dragover', event => event.preventDefault());
@@ -209,20 +207,9 @@ document.addEventListener('drop', event => event.preventDefault());
 dropZone.addEventListener('drop', event => addFiles(event.dataTransfer.files));
 
 fileList.addEventListener('click', event => {
-  const button = event.target.closest('button[data-action]');
-  if (!button) return;
-
-  const index = Number(button.dataset.index);
-  if (button.dataset.action === 'move') {
-    activeMoveIndex = activeMoveIndex === index ? null : index;
-    setStatus(activeMoveIndex === null
-      ? t('ready')
-      : currentLang === 'de'
-        ? 'Tippe auf die Zielposition oder ziehe die Zahl.'
-        : 'Tap the target position or drag the number.');
-    renderFileList();
-  }
-  if (button.dataset.action === 'remove') removeFile(index);
+  const removeButton = event.target.closest('[data-action="remove"]');
+  if (!removeButton) return;
+  removeFile(Number(removeButton.dataset.index));
 });
 
 fileList.addEventListener('change', event => {
@@ -268,6 +255,7 @@ async function addFiles(files) {
     id: crypto.randomUUID(),
     file,
     previewUrl: '',
+    previewFailed: false,
     previewType: file.type === 'application/pdf' ? 'pdf' : isDocumentFile(file) ? 'doc' : 'image',
     deleted: false
   }));
@@ -276,46 +264,36 @@ async function addFiles(files) {
   renderFileList();
 
   for (const item of newItems) {
-    const currentId = item.id;
-    await createPreview(item, currentId);
-
-    const stillExists = selectedItems.some(activeItem =>
-      activeItem.id === currentId && !activeItem.deleted
-    );
-
-    if (!stillExists) {
-      revokePreview(item);
-    }
+    await createPreview(item, item.id);
   }
-
-  renderFileList();
 }
 
 async function createPreview(item, requestId = item.id) {
   try {
+    if (!isItemActive(requestId)) return;
+
     if (item.file.type.startsWith('image/')) {
-      if (item.deleted || item.id !== requestId) return;
       item.previewUrl = URL.createObjectURL(item.file);
       renderFileList();
       return;
     }
 
     if (item.file.type === 'application/pdf') {
-      item.previewUrl = await createPdfPreview(item.file);
-      if (item.deleted || item.id !== requestId) return;
+      const preview = await createPdfPreview(item.file);
+      if (!isItemActive(requestId)) return;
+      item.previewUrl = preview;
       renderFileList();
       return;
     }
 
     if (isDocumentFile(item.file)) {
       const preview = await createDocumentPreview(item.file);
-      if (item.deleted || item.id !== requestId) return;
+      if (!isItemActive(requestId)) return;
       item.previewUrl = preview;
       renderFileList();
     }
   } catch (error) {
     console.error('Preview error:', error);
-    item.previewUrl = '';
     item.previewFailed = true;
     renderFileList();
   }
@@ -328,23 +306,20 @@ async function createPdfPreview(file) {
   const page = await pdf.getPage(1);
 
   const baseViewport = page.getViewport({ scale: 1 });
-  const targetWidth = 420;
-  const scale = targetWidth / baseViewport.width;
+  const scale = 420 / baseViewport.width;
   const viewport = page.getViewport({ scale });
 
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d', { alpha: false });
   canvas.width = Math.ceil(viewport.width);
   canvas.height = Math.ceil(viewport.height);
-
   context.fillStyle = '#ffffff';
   context.fillRect(0, 0, canvas.width, canvas.height);
 
   await page.render({ canvasContext: context, viewport }).promise;
-  const imageUrl = canvas.toDataURL('image/png');
-
+  const url = canvas.toDataURL('image/png');
   if (pdf.destroy) await pdf.destroy();
-  return imageUrl;
+  return url;
 }
 
 function renderFileList() {
@@ -359,217 +334,150 @@ function renderFileList() {
 
   selectedItems.forEach((item, index) => {
     const file = item.file;
-    const card = document.createElement('div');
-    card.className = 'file-card';
-    card.draggable = false;
-    card.dataset.index = index;
-
-    const badge = item.previewType === 'pdf' ? 'PDF' : item.previewType === 'doc' ? getDocumentBadge(item.file) : 'IMG';
+    const badge = item.previewType === 'pdf' ? 'PDF' : item.previewType === 'doc' ? getDocumentBadge(file) : 'IMG';
     const previewLabel = item.previewType === 'pdf' ? t('pdfPreview') : item.previewType === 'doc' ? t('docPreview') : t('imagePreview');
 
+    const card = document.createElement('article');
+    card.className = 'file-card';
+    card.dataset.index = index;
+    card.dataset.id = item.id;
+
     card.innerHTML = `
-      <button class="order-badge move-handle" data-action="move" data-index="${index}" title="Move">${index + 1}</button>
+      <button class="remove-chip" data-action="remove" data-index="${index}" aria-label="${t('remove')}">×</button>
+      <button class="order-chip" data-index="${index}" aria-label="Move file">${index + 1}</button>
       <div class="preview" title="${previewLabel}">
-        ${item.previewUrl ? `<img src="${item.previewUrl}" alt="${previewLabel}">` : `<div class="preview-placeholder">…</div>`}
+        ${item.previewUrl
+          ? `<img src="${item.previewUrl}" alt="${previewLabel}">`
+          : `<div class="preview-placeholder">${item.previewFailed ? badge : '…'}</div>`}
         <div class="preview-badge">${badge}</div>
       </div>
-      <div class="file-info">
-        <div class="file-title" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</div>
-        <div class="file-meta">${file.type || 'File'} · ${formatBytes(file.size)}</div>
-        <div class="file-help">${item.previewUrl ? previewLabel : t('previewLoading')}</div>
-      </div>
-      <div class="file-tools">
-        <div class="file-buttons">
-          <button class="btn btn-danger" data-action="remove" data-index="${index}">${t('remove')}</button>
-        </div>
-      </div>
+      <div class="file-title" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</div>
+      <label class="position-jump">
+        <span>Pos</span>
+        <input class="position-input" type="number" min="1" max="${selectedItems.length}" value="${index + 1}" data-index="${index}">
+      </label>
     `;
 
-    const handle = card.querySelector('.move-handle');
-    setupHandleDrag(handle, card, index);
-
-    card.addEventListener('click', event => {
-      if (event.target.closest('button, input')) return;
-      if (activeMoveIndex === null) return;
-      const targetIndex = Number(card.dataset.index);
-      reorderFiles(activeMoveIndex, targetIndex);
-      activeMoveIndex = null;
-      setStatus(t('ready'));
-    });
-
-    if (activeMoveIndex === index) card.classList.add('move-selected');
-
+    setupOrderChipDrag(card.querySelector('.order-chip'), card, index);
     fileList.appendChild(card);
   });
 }
 
-function setupLongPressDrag(card, index) {
-  return;
-}
-
-function setupHandleDrag(handle, card, index) {
-  let startX = 0;
-  let startY = 0;
-  let dragging = false;
-
-  handle.addEventListener('pointerdown', event => {
+function setupOrderChipDrag(chip, card, index) {
+  chip.addEventListener('pointerdown', event => {
     event.preventDefault();
     event.stopPropagation();
-    startX = event.clientX;
-    startY = event.clientY;
-    dragging = true;
-    handle.setPointerCapture(event.pointerId);
-    startTouchDrag(card, index, event.clientX, event.clientY);
+    chip.setPointerCapture(event.pointerId);
+    beginDrag(card, index, event.clientX, event.clientY);
   });
 
-  handle.addEventListener('pointermove', event => {
-    if (!dragging || !touchDrag) return;
+  chip.addEventListener('pointermove', event => {
+    if (!dragState) return;
     event.preventDefault();
-    moveTouchDrag(event.clientX, event.clientY);
+    moveDrag(event.clientX, event.clientY);
   });
 
-  handle.addEventListener('pointerup', event => {
-    if (!dragging) return;
+  chip.addEventListener('pointerup', event => {
+    if (!dragState) return;
     event.preventDefault();
-    dragging = false;
-
-    const moved = Math.hypot(event.clientX - startX, event.clientY - startY);
-    if (moved < 6) {
-      cancelTouchDrag();
-      activeMoveIndex = activeMoveIndex === index ? null : index;
-      setStatus(activeMoveIndex === null
-        ? t('ready')
-        : currentLang === 'de'
-          ? 'Tippe auf die Zielposition.'
-          : 'Tap the target position.');
-      renderFileList();
-      return;
-    }
-
-    finishTouchDrag();
+    finishDrag();
   });
 
-  handle.addEventListener('pointercancel', () => {
-    dragging = false;
-    cancelTouchDrag();
-  });
+  chip.addEventListener('pointercancel', cancelDrag);
 }
 
-function startTouchDrag(card, index, x, y) {
-  if (touchDrag) cancelTouchDrag();
+function beginDrag(card, index, x, y) {
+  cancelDrag();
 
   const rect = card.getBoundingClientRect();
   const ghost = card.cloneNode(true);
-  ghost.classList.add('touch-drag-ghost');
+  ghost.classList.add('drag-ghost');
   ghost.style.width = `${rect.width}px`;
   ghost.style.left = `${x - rect.width / 2}px`;
-  ghost.style.top = `${y - 40}px`;
+  ghost.style.top = `${y - 42}px`;
 
   const placeholder = document.createElement('div');
   placeholder.className = 'drop-placeholder';
   placeholder.style.width = `${rect.width}px`;
   placeholder.style.height = `${rect.height}px`;
 
-  card.classList.add('touch-drag-source');
+  card.classList.add('drag-source');
   document.body.appendChild(ghost);
   fileList.insertBefore(placeholder, card.nextSibling);
 
-  touchDrag = {
+  dragState = {
     fromIndex: index,
     targetIndex: index,
     ghost,
     placeholder,
-    sourceCard: card
+    source: card
   };
 
-  if (navigator.vibrate) navigator.vibrate(25);
+  if (navigator.vibrate) navigator.vibrate(20);
 }
 
-function moveTouchDrag(x, y) {
-  if (!touchDrag) return;
+function moveDrag(x, y) {
+  if (!dragState) return;
 
-  touchDrag.ghost.style.left = `${x - touchDrag.ghost.offsetWidth / 2}px`;
-  touchDrag.ghost.style.top = `${y - 55}px`;
+  dragState.ghost.style.left = `${x - dragState.ghost.offsetWidth / 2}px`;
+  dragState.ghost.style.top = `${y - 50}px`;
 
-  const cards = [...fileList.querySelectorAll('.file-card:not(.touch-drag-source)')];
-  let targetCard = null;
-  let targetIndex = selectedItems.length - 1;
+  const cards = [...fileList.querySelectorAll('.file-card:not(.drag-source)')];
+  let inserted = false;
 
   for (const card of cards) {
     const rect = card.getBoundingClientRect();
-    const middleY = rect.top + rect.height / 2;
-    const middleX = rect.left + rect.width / 2;
+    const before = y < rect.top + rect.height / 2 || (y < rect.bottom && x < rect.left + rect.width / 2);
 
-    if (y < middleY || (Math.abs(y - middleY) < rect.height / 2 && x < middleX)) {
-      targetCard = card;
-      targetIndex = Number(card.dataset.index);
+    if (before) {
+      fileList.insertBefore(dragState.placeholder, card);
+      inserted = true;
       break;
     }
   }
 
-  if (targetCard) {
-    fileList.insertBefore(touchDrag.placeholder, targetCard);
-  } else {
-    fileList.appendChild(touchDrag.placeholder);
-    targetIndex = selectedItems.length - 1;
-  }
+  if (!inserted) fileList.appendChild(dragState.placeholder);
 
-  const placeholderIndex = [...fileList.children].indexOf(touchDrag.placeholder);
-  touchDrag.targetIndex = Math.max(0, Math.min(selectedItems.length - 1, placeholderIndex));
+  const children = [...fileList.children].filter(el => !el.classList.contains('drag-source'));
+  dragState.targetIndex = Math.max(0, Math.min(selectedItems.length - 1, children.indexOf(dragState.placeholder)));
 }
 
-function finishTouchDrag() {
-  if (!touchDrag) return;
-
-  const { fromIndex, targetIndex } = touchDrag;
-  cleanupTouchDrag();
-  reorderFiles(fromIndex, targetIndex);
+function finishDrag() {
+  if (!dragState) return;
+  const fromIndex = dragState.fromIndex;
+  const toIndex = dragState.targetIndex;
+  cleanupDrag();
+  reorderFiles(fromIndex, toIndex);
 }
 
-function cancelTouchDrag() {
-  cleanupTouchDrag();
+function cancelDrag() {
+  cleanupDrag();
 }
 
-function cleanupTouchDrag() {
-  if (!touchDrag) return;
-
-  touchDrag.ghost.remove();
-  touchDrag.placeholder.remove();
-  touchDrag.sourceCard.classList.remove('touch-drag-source');
-  touchDrag = null;
-}
-
-function updateCount() {
-  fileCount.textContent = t('count', selectedItems.length);
-}
-
-function moveFile(index, direction) {
-  const newIndex = index + direction;
-  if (newIndex < 0 || newIndex >= selectedItems.length) return;
-  reorderFiles(index, newIndex);
+function cleanupDrag() {
+  if (!dragState) return;
+  dragState.ghost.remove();
+  dragState.placeholder.remove();
+  dragState.source.classList.remove('drag-source');
+  dragState = null;
 }
 
 function reorderFiles(fromIndex, toIndex) {
-  if (fromIndex === null || fromIndex === toIndex || fromIndex < 0 || toIndex < 0) return;
-
+  if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) return;
   const currentItems = selectedItems.filter(item => item && !item.deleted);
   const [item] = currentItems.splice(fromIndex, 1);
   if (!item) return;
-
   currentItems.splice(toIndex, 0, item);
-  selectedItems = [...currentItems];
+  selectedItems = currentItems;
   renderFileList();
 }
 
 function removeFile(index) {
   const item = selectedItems[index];
   if (!item) return;
-
   item.deleted = true;
   revokePreview(item);
   selectedItems = selectedItems.filter((_, itemIndex) => itemIndex !== index);
-  selectedItems = [...selectedItems];
-  draggedIndex = null;
   renderFileList();
 }
 
@@ -578,15 +486,22 @@ function clearAllItems() {
     item.deleted = true;
     revokePreview(item);
   });
-  selectedItems = [...[]];
-  draggedIndex = null;
+  selectedItems = [];
+  lastPdfFile = null;
+  if (finalActions) finalActions.style.display = 'none';
 }
 
 function revokePreview(item) {
-  if (item?.previewUrl && item.previewUrl.startsWith('blob:')) {
-    URL.revokeObjectURL(item.previewUrl);
-  }
+  if (item?.previewUrl?.startsWith('blob:')) URL.revokeObjectURL(item.previewUrl);
   if (item) item.previewUrl = '';
+}
+
+function isItemActive(id) {
+  return selectedItems.some(item => item.id === id && !item.deleted);
+}
+
+function updateCount() {
+  fileCount.textContent = t('count', selectedItems.length);
 }
 
 function setStatus(message) {
@@ -598,7 +513,7 @@ function setupActionButtons() {
   nextBtn.className = 'btn btn-soft';
   nextBtn.id = 'nextBtn';
   nextBtn.type = 'button';
-  nextBtn.textContent = currentLang === 'de' ? 'Weiter' : 'Next';
+  nextBtn.textContent = t('next');
   nextBtn.addEventListener('click', () => {
     document.querySelector('.list-header')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
@@ -612,7 +527,7 @@ function setupActionButtons() {
   shareBtn.className = 'btn btn-primary';
   shareBtn.id = 'shareBtn';
   shareBtn.type = 'button';
-  shareBtn.textContent = currentLang === 'de' ? 'PDF teilen' : 'Share PDF';
+  shareBtn.textContent = t('share');
   shareBtn.addEventListener('click', shareLastPdf);
 
   finalActions.appendChild(shareBtn);
@@ -629,13 +544,12 @@ async function shareLastPdf() {
       files: [lastPdfFile]
     });
   } else {
-    setStatus(currentLang === 'de' ? 'Teilen wird von diesem Browser nicht unterstützt.' : 'Sharing is not supported by this browser.');
+    setStatus(t('shareUnsupported'));
   }
 }
 
 async function createPdf() {
   const itemsToMerge = selectedItems.filter(item => item && !item.deleted && item.file);
-
   if (itemsToMerge.length === 0) {
     setStatus(t('chooseFirst'));
     return;
@@ -648,7 +562,7 @@ async function createPdf() {
     const outputPdf = await PDFDocument.create();
 
     for (const item of itemsToMerge) {
-      if (!selectedItems.some(activeItem => activeItem.id === item.id)) continue;
+      if (!isItemActive(item.id)) continue;
       const file = item.file;
       const bytes = await file.arrayBuffer();
 
@@ -665,9 +579,11 @@ async function createPdf() {
 
     const pdfBytes = await outputPdf.save();
     lastPdfFile = new File([pdfBytes], 'merged-pdf.pdf', { type: 'application/pdf' });
-    if (finalActions && shareBtn && navigator.canShare && navigator.canShare({ files: [lastPdfFile] })) {
+
+    if (finalActions && navigator.canShare && navigator.canShare({ files: [lastPdfFile] })) {
       finalActions.style.display = 'flex';
     }
+
     downloadPdf(pdfBytes, 'merged-pdf.pdf');
     setStatus(t('done'));
   } catch (error) {
@@ -684,8 +600,7 @@ function isDocumentFile(file) {
 }
 
 function getDocumentBadge(file) {
-  const ext = file.name.split('.').pop()?.toUpperCase();
-  return ext || 'DOC';
+  return file.name.split('.').pop()?.toUpperCase() || 'DOC';
 }
 
 async function createDocumentPreview(file) {
@@ -731,13 +646,7 @@ async function addDocumentPages(pdf, file) {
     const scale = Math.min(pageWidth / image.width, pageHeight / image.height);
     const width = image.width * scale;
     const height = image.height * scale;
-
-    page.drawImage(image, {
-      x: (pageWidth - width) / 2,
-      y: pageHeight - height,
-      width,
-      height
-    });
+    page.drawImage(image, { x: (pageWidth - width) / 2, y: pageHeight - height, width, height });
   }
 }
 
@@ -781,12 +690,8 @@ async function documentToHtml(file) {
 
 async function addImagePage(pdf, file, bytes) {
   let image;
-
-  if (file.type === 'image/png') {
-    image = await pdf.embedPng(bytes);
-  } else {
-    image = await pdf.embedJpg(await convertImageToJpgBytes(file));
-  }
+  if (file.type === 'image/png') image = await pdf.embedPng(bytes);
+  else image = await pdf.embedJpg(await convertImageToJpgBytes(file));
 
   const pageWidth = 595.28;
   const pageHeight = 841.89;
@@ -800,7 +705,6 @@ async function addImagePage(pdf, file, bytes) {
 
   const finalWidth = image.width * scale;
   const finalHeight = image.height * scale;
-
   page.drawImage(image, {
     x: (pageWidth - finalWidth) / 2,
     y: (pageHeight - finalHeight) / 2,
@@ -819,18 +723,15 @@ function convertImageToJpgBytes(file) {
         const canvas = document.createElement('canvas');
         canvas.width = img.width;
         canvas.height = img.height;
-
         const ctx = canvas.getContext('2d');
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0);
-
         canvas.toBlob(blob => {
           if (!blob) reject(new Error('Image conversion failed'));
           else blob.arrayBuffer().then(resolve);
         }, 'image/jpeg', 0.95);
       };
-
       img.onerror = reject;
       img.src = reader.result;
     };
@@ -862,7 +763,7 @@ function formatBytes(bytes) {
   return `${(bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
 }
 
-function injectFixedGalleryStyles() {
+function injectCleanGalleryStyles() {
   const style = document.createElement('style');
   style.textContent = `
     #nextBtn {
@@ -881,25 +782,178 @@ function injectFixedGalleryStyles() {
       justify-content: center;
     }
 
-    .file-card,
-    .preview,
-    .preview img {
-      touch-action: pan-y !important;
+    #fileList {
+      display: grid !important;
+      grid-template-columns: repeat(auto-fill, 170px) !important;
+      gap: 16px !important;
+      align-items: start !important;
+      justify-content: start !important;
+      min-height: 180px !important;
+    }
+
+    .file-card {
+      position: relative !important;
+      display: grid !important;
+      gap: 9px !important;
+      width: 170px !important;
+      min-width: 170px !important;
+      max-width: 170px !important;
+      padding: 10px !important;
+      border-radius: 22px !important;
+      background: white !important;
+      border: 1px solid var(--border) !important;
+      box-shadow: 0 10px 24px rgba(16, 24, 40, 0.06) !important;
+      box-sizing: border-box !important;
+      overflow: visible !important;
+    }
+
+    .preview {
+      width: 150px !important;
+      height: 210px !important;
+      max-width: 150px !important;
+      max-height: 210px !important;
+      border-radius: 17px !important;
+      overflow: hidden !important;
+      border: 1px solid var(--border) !important;
+      background: #f8fafc !important;
+      display: grid !important;
+      place-items: center !important;
+    }
+
+    .preview img,
+    .preview canvas {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: contain !important;
+      background: #f8fafc !important;
       -webkit-user-drag: none !important;
       user-select: none !important;
+      pointer-events: none !important;
     }
 
-    .touch-drag-source {
-      opacity: 0.25 !important;
+    .preview-placeholder {
+      display: grid !important;
+      place-items: center !important;
+      width: 100% !important;
+      height: 100% !important;
+      color: #64748b !important;
+      font-weight: 900 !important;
+      font-size: 26px !important;
     }
 
-    .touch-drag-ghost {
+    .preview-badge {
+      position: absolute !important;
+      left: 8px !important;
+      top: 8px !important;
+      padding: 5px 8px !important;
+      border-radius: 999px !important;
+      background: rgba(17,24,39,0.78) !important;
+      color: white !important;
+      font-size: 11px !important;
+      font-weight: 900 !important;
+      z-index: 3 !important;
+    }
+
+    .order-chip,
+    .remove-chip {
+      position: absolute !important;
+      z-index: 6 !important;
+      border: none !important;
+      cursor: grab !important;
+      user-select: none !important;
+      touch-action: none !important;
+      display: grid !important;
+      place-items: center !important;
+      box-shadow: 0 10px 20px rgba(16,24,40,0.18) !important;
+    }
+
+    .order-chip {
+      right: 8px !important;
+      top: 8px !important;
+      width: 38px !important;
+      height: 38px !important;
+      border-radius: 999px !important;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark)) !important;
+      color: white !important;
+      font-weight: 950 !important;
+      font-size: 18px !important;
+    }
+
+    .remove-chip {
+      left: 8px !important;
+      top: 8px !important;
+      width: 28px !important;
+      height: 28px !important;
+      border-radius: 999px !important;
+      background: rgba(239, 68, 68, 0.96) !important;
+      color: white !important;
+      font-size: 20px !important;
+      line-height: 1 !important;
+      cursor: pointer !important;
+    }
+
+    .file-title {
+      font-weight: 850 !important;
+      overflow: hidden !important;
+      white-space: nowrap !important;
+      text-overflow: ellipsis !important;
+      font-size: 14px !important;
+      padding: 0 3px !important;
+      color: var(--text) !important;
+    }
+
+    .position-jump {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      gap: 8px !important;
+      padding: 6px 8px !important;
+      border-radius: 12px !important;
+      background: #f8fafc !important;
+      border: 1px solid var(--border) !important;
+      color: var(--muted) !important;
+      font-size: 12px !important;
+      font-weight: 800 !important;
+    }
+
+    .position-jump .position-input {
+      display: block !important;
+      width: 48px !important;
+      border: none !important;
+      outline: none !important;
+      background: white !important;
+      border-radius: 9px !important;
+      padding: 5px 4px !important;
+      text-align: center !important;
+      font-weight: 900 !important;
+      color: var(--text) !important;
+    }
+
+    .position-jump .position-input:focus {
+      box-shadow: 0 0 0 3px rgba(99,91,255,0.16) !important;
+    }
+
+    .file-tools,
+    .file-buttons,
+    .position-row,
+    .btn-move,
+    .btn-soft[data-action="up"],
+    .btn-soft[data-action="down"],
+    .btn-danger[data-action="remove"] {
+      display: none !important;
+    }
+
+    .drag-source {
+      opacity: 0.22 !important;
+    }
+
+    .drag-ghost {
       position: fixed !important;
       z-index: 9999 !important;
       pointer-events: none !important;
-      opacity: 0.72 !important;
+      opacity: 0.74 !important;
       transform: scale(1.04) rotate(1deg) !important;
-      box-shadow: 0 24px 60px rgba(16, 24, 40, 0.28) !important;
+      box-shadow: 0 26px 70px rgba(16,24,40,0.30) !important;
     }
 
     .drop-placeholder {
@@ -922,68 +976,31 @@ function injectFixedGalleryStyles() {
       .actions {
         gap: 8px !important;
       }
-    }
 
-    #fileList {
-      display: grid !important;
-      grid-template-columns: repeat(auto-fill, 170px) !important;
-      gap: 16px !important;
-      align-items: start !important;
-      justify-content: start !important;
-      min-height: 180px !important;
-    }
-
-    .file-card {
-      display: grid !important;
-      gap: 10px !important;
-      background: white !important;
-      border: 1px solid var(--border) !important;
-      border-radius: 22px !important;
-      padding: 10px !important;
-      width: 170px !important;
-      min-width: 170px !important;
-      max-width: 170px !important;
-      box-sizing: border-box !important;
-    }
-
-    .preview {
-      overflow: hidden !important;
-      border-radius: 16px !important;
-      border: 1px solid var(--border) !important;
-      display: grid !important;
-      place-items: center !important;
-      width: 150px !important;
-      height: 210px !important;
-      max-width: 150px !important;
-      max-height: 210px !important;
-      aspect-ratio: auto !important;
-    }
-
-    .preview img,
-    .preview canvas {
-      width: 100% !important;
-      height: 100% !important;
-      object-fit: contain !important;
-      background: #f8fafc !important;
-    }
-
-    @media (max-width: 820px) {
       #fileList {
-        grid-template-columns: repeat(auto-fill, 130px) !important;
-        gap: 10px !important;
+        grid-template-columns: repeat(auto-fill, 145px) !important;
+        gap: 12px !important;
       }
 
       .file-card {
-        width: 130px !important;
-        min-width: 130px !important;
-        max-width: 130px !important;
+        width: 145px !important;
+        min-width: 145px !important;
+        max-width: 145px !important;
+        border-radius: 20px !important;
+        padding: 9px !important;
       }
 
       .preview {
-        width: 112px !important;
-        height: 156px !important;
-        max-width: 112px !important;
-        max-height: 156px !important;
+        width: 127px !important;
+        height: 178px !important;
+        max-width: 127px !important;
+        max-height: 178px !important;
+      }
+
+      .order-chip {
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 17px !important;
       }
     }
   `;
