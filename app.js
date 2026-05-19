@@ -145,13 +145,16 @@ const translations = {
 let selectedItems = [];
 let currentLang = getSystemLanguage();
 let draggedIndex = null;
+let touchDrag = null;
 
 const fileInput = document.getElementById('fileInput');
 const fileList = document.getElementById('fileList');
 const statusBox = document.getElementById('status');
 const dropZone = document.getElementById('dropZone');
 const createBtn = document.getElementById('createBtn');
+let nextBtn = null;
 let shareBtn = null;
+let finalActions = null;
 let lastPdfFile = null;
 const clearBtn = document.getElementById('clearBtn');
 const languageSelect = document.getElementById('languageSelect');
@@ -161,7 +164,7 @@ languageSelect.value = 'auto';
 applyLanguage(currentLang);
 injectFixedGalleryStyles();
 renderFileList();
-setupShareButton();
+setupActionButtons();
 
 fileInput.addEventListener('change', event => {
   addFiles(event.target.files);
@@ -179,6 +182,8 @@ clearBtn.addEventListener('click', () => {
 languageSelect.addEventListener('change', () => {
   currentLang = languageSelect.value === 'auto' ? getSystemLanguage() : languageSelect.value;
   applyLanguage(currentLang);
+  if (nextBtn) nextBtn.textContent = currentLang === 'de' ? 'Weiter' : 'Next';
+  if (shareBtn) shareBtn.textContent = currentLang === 'de' ? 'PDF teilen' : 'Share PDF';
   renderFileList();
   setStatus(t('ready'));
 });
@@ -380,8 +385,146 @@ function renderFileList() {
       reorderFiles(draggedIndex, Number(card.dataset.index));
     });
 
+    setupLongPressDrag(card, index);
+
     fileList.appendChild(card);
   });
+}
+
+function setupLongPressDrag(card, index) {
+  let pressTimer = null;
+  let startX = 0;
+  let startY = 0;
+
+  card.addEventListener('pointerdown', event => {
+    if (event.pointerType === 'mouse') return;
+    if (event.target.closest('button, input')) return;
+
+    startX = event.clientX;
+    startY = event.clientY;
+
+    pressTimer = setTimeout(() => {
+      startTouchDrag(card, index, event.clientX, event.clientY);
+    }, 420);
+  });
+
+  card.addEventListener('pointermove', event => {
+    if (!pressTimer && !touchDrag) return;
+
+    const moved = Math.hypot(event.clientX - startX, event.clientY - startY);
+
+    if (pressTimer && moved > 10) {
+      clearTimeout(pressTimer);
+      pressTimer = null;
+      return;
+    }
+
+    if (touchDrag) {
+      event.preventDefault();
+      moveTouchDrag(event.clientX, event.clientY);
+    }
+  }, { passive: false });
+
+  card.addEventListener('pointerup', event => {
+    if (pressTimer) {
+      clearTimeout(pressTimer);
+      pressTimer = null;
+    }
+
+    if (touchDrag) {
+      event.preventDefault();
+      finishTouchDrag(event.clientX, event.clientY);
+    }
+  });
+
+  card.addEventListener('pointercancel', () => {
+    if (pressTimer) clearTimeout(pressTimer);
+    cancelTouchDrag();
+  });
+}
+
+function startTouchDrag(card, index, x, y) {
+  if (touchDrag) cancelTouchDrag();
+
+  const rect = card.getBoundingClientRect();
+  const ghost = card.cloneNode(true);
+  ghost.classList.add('touch-drag-ghost');
+  ghost.style.width = `${rect.width}px`;
+  ghost.style.left = `${x - rect.width / 2}px`;
+  ghost.style.top = `${y - 40}px`;
+
+  const placeholder = document.createElement('div');
+  placeholder.className = 'drop-placeholder';
+  placeholder.style.width = `${rect.width}px`;
+  placeholder.style.height = `${rect.height}px`;
+
+  card.classList.add('touch-drag-source');
+  document.body.appendChild(ghost);
+  fileList.insertBefore(placeholder, card.nextSibling);
+
+  touchDrag = {
+    fromIndex: index,
+    targetIndex: index,
+    ghost,
+    placeholder,
+    sourceCard: card
+  };
+
+  if (navigator.vibrate) navigator.vibrate(25);
+}
+
+function moveTouchDrag(x, y) {
+  if (!touchDrag) return;
+
+  touchDrag.ghost.style.left = `${x - touchDrag.ghost.offsetWidth / 2}px`;
+  touchDrag.ghost.style.top = `${y - 55}px`;
+
+  const cards = [...fileList.querySelectorAll('.file-card:not(.touch-drag-source)')];
+  let targetCard = null;
+  let targetIndex = selectedItems.length - 1;
+
+  for (const card of cards) {
+    const rect = card.getBoundingClientRect();
+    const middleY = rect.top + rect.height / 2;
+    const middleX = rect.left + rect.width / 2;
+
+    if (y < middleY || (Math.abs(y - middleY) < rect.height / 2 && x < middleX)) {
+      targetCard = card;
+      targetIndex = Number(card.dataset.index);
+      break;
+    }
+  }
+
+  if (targetCard) {
+    fileList.insertBefore(touchDrag.placeholder, targetCard);
+  } else {
+    fileList.appendChild(touchDrag.placeholder);
+    targetIndex = selectedItems.length - 1;
+  }
+
+  const placeholderIndex = [...fileList.children].indexOf(touchDrag.placeholder);
+  touchDrag.targetIndex = Math.max(0, Math.min(selectedItems.length - 1, placeholderIndex));
+}
+
+function finishTouchDrag() {
+  if (!touchDrag) return;
+
+  const { fromIndex, targetIndex } = touchDrag;
+  cleanupTouchDrag();
+  reorderFiles(fromIndex, targetIndex);
+}
+
+function cancelTouchDrag() {
+  cleanupTouchDrag();
+}
+
+function cleanupTouchDrag() {
+  if (!touchDrag) return;
+
+  touchDrag.ghost.remove();
+  touchDrag.placeholder.remove();
+  touchDrag.sourceCard.classList.remove('touch-drag-source');
+  touchDrag = null;
 }
 
 function updateCount() {
@@ -438,14 +581,30 @@ function setStatus(message) {
   statusBox.textContent = message;
 }
 
-function setupShareButton() {
+function setupActionButtons() {
+  nextBtn = document.createElement('button');
+  nextBtn.className = 'btn btn-soft';
+  nextBtn.id = 'nextBtn';
+  nextBtn.type = 'button';
+  nextBtn.textContent = currentLang === 'de' ? 'Weiter' : 'Next';
+  nextBtn.addEventListener('click', () => {
+    document.querySelector('.list-header')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  createBtn.insertAdjacentElement('beforebegin', nextBtn);
+
+  finalActions = document.createElement('div');
+  finalActions.id = 'finalActions';
+  finalActions.style.display = 'none';
+
   shareBtn = document.createElement('button');
-  shareBtn.className = 'btn btn-soft';
+  shareBtn.className = 'btn btn-primary';
   shareBtn.id = 'shareBtn';
-  shareBtn.textContent = currentLang === 'de' ? 'Teilen' : 'Share';
-  shareBtn.style.display = 'none';
+  shareBtn.type = 'button';
+  shareBtn.textContent = currentLang === 'de' ? 'PDF teilen' : 'Share PDF';
   shareBtn.addEventListener('click', shareLastPdf);
-  createBtn.insertAdjacentElement('afterend', shareBtn);
+
+  finalActions.appendChild(shareBtn);
+  fileList.insertAdjacentElement('afterend', finalActions);
 }
 
 async function shareLastPdf() {
@@ -494,8 +653,8 @@ async function createPdf() {
 
     const pdfBytes = await outputPdf.save();
     lastPdfFile = new File([pdfBytes], 'merged-pdf.pdf', { type: 'application/pdf' });
-    if (shareBtn && navigator.canShare && navigator.canShare({ files: [lastPdfFile] })) {
-      shareBtn.style.display = 'inline-flex';
+    if (finalActions && shareBtn && navigator.canShare && navigator.canShare({ files: [lastPdfFile] })) {
+      finalActions.style.display = 'flex';
     }
     downloadPdf(pdfBytes, 'merged-pdf.pdf');
     setStatus(t('done'));
@@ -694,17 +853,62 @@ function formatBytes(bytes) {
 function injectFixedGalleryStyles() {
   const style = document.createElement('style');
   style.textContent = `
-    #shareBtn {
-      margin-left: 10px;
+    #nextBtn {
       align-items: center;
       justify-content: center;
     }
 
+    #finalActions {
+      margin-top: 16px;
+      display: none;
+      justify-content: flex-end;
+    }
+
+    #shareBtn {
+      align-items: center;
+      justify-content: center;
+    }
+
+    .file-card,
+    .preview,
+    .preview img {
+      touch-action: pan-y !important;
+      -webkit-user-drag: none !important;
+      user-select: none !important;
+    }
+
+    .touch-drag-source {
+      opacity: 0.25 !important;
+    }
+
+    .touch-drag-ghost {
+      position: fixed !important;
+      z-index: 9999 !important;
+      pointer-events: none !important;
+      opacity: 0.72 !important;
+      transform: scale(1.04) rotate(1deg) !important;
+      box-shadow: 0 24px 60px rgba(16, 24, 40, 0.28) !important;
+    }
+
+    .drop-placeholder {
+      border: 2px dashed var(--primary) !important;
+      border-radius: 22px !important;
+      background: rgba(99, 91, 255, 0.10) !important;
+      box-shadow: inset 0 0 0 4px rgba(99, 91, 255, 0.08) !important;
+    }
+
     @media (max-width: 820px) {
+      #nextBtn,
       #shareBtn {
         width: 100%;
-        margin-left: 0;
-        margin-top: 10px;
+      }
+
+      #finalActions {
+        justify-content: stretch;
+      }
+
+      .actions {
+        gap: 8px !important;
       }
     }
 
@@ -736,7 +940,8 @@ function injectFixedGalleryStyles() {
     .preview canvas {
       width: 100% !important;
       height: 100% !important;
-      object-fit: cover !important;
+      object-fit: contain !important;
+      background: #f8fafc !important;
     }
 
     @media (max-width: 820px) {
