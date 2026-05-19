@@ -78,10 +78,8 @@ const pdfNameInput = document.getElementById('pdfName');
 const shareBtn = document.getElementById('shareBtn');
 
 if (shareBtn) {
-  shareBtn.style.display = 'block';
-  shareBtn.classList.add('is-visible');
-  shareBtn.disabled = false;
-  shareBtn.removeAttribute('disabled');
+  makeShareButtonClickable();
+  setInterval(makeShareButtonClickable, 300);
 }
 
 languageSelect.value = 'auto';
@@ -434,6 +432,13 @@ function setStatus(message) {
 }
 
 function showShareButton() {
+  makeShareButtonClickable();
+}bled');
+  shareBtn.style.pointerEvents = 'auto';
+  shareBtn.style.cursor = 'pointer';
+}
+
+function showShareButton() {
   if (!shareBtn) return;
   shareBtn.style.display = 'block';
   shareBtn.classList.add('is-visible');
@@ -442,11 +447,7 @@ function showShareButton() {
 }
 
 function hideShareButton() {
-  if (!shareBtn) return;
-  shareBtn.style.display = 'block';
-  shareBtn.classList.add('is-visible');
-  shareBtn.disabled = false;
-  shareBtn.removeAttribute('disabled');
+  makeShareButtonClickable();
 }
 
 async function shareLastPdf() {
