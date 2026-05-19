@@ -13,8 +13,10 @@ const translations = {
     clear: 'Leeren',
     uploadTitle: 'Dateien hier hineinziehen',
     uploadText: 'Oder klicken zum Auswählen. PDF, DOC, DOCX, TXT, RTF, ODT, PPTX, XLSX, PNG, JPG, JPEG und WebP werden unterstützt.',
+    pdfNameLabel: 'PDF Name',
+    pdfNamePlaceholder: 'Hier Namen eingeben z.B. Meine-Datei',
     ready: 'Bereit.',
-    create: 'PDF erstellen',
+    create: 'PDF herunterladen',
     files: 'Reihenfolge & Vorschau',
     sortHint: 'Zahl oben rechts ziehen oder unten eine Position eingeben. X löscht eine Datei.',
     noFiles: 'Noch keine Dateien ausgewählt. Ziehe Dateien oben hinein.',
@@ -24,7 +26,6 @@ const translations = {
     done: 'Fertig! PDF wurde heruntergeladen.',
     error: 'Fehler beim Erstellen des PDFs.',
     remove: 'Entfernen',
-    next: 'Weiter',
     share: 'PDF teilen',
     shareUnsupported: 'Teilen wird von diesem Browser nicht unterstützt.',
     pdfPreview: 'PDF-Seite 1',
@@ -39,8 +40,10 @@ const translations = {
     clear: 'Clear',
     uploadTitle: 'Drop files here',
     uploadText: 'Or click to select. PDF, DOC, DOCX, TXT, RTF, ODT, PPTX, XLSX, PNG, JPG, JPEG and WebP are supported.',
+    pdfNameLabel: 'PDF name',
+    pdfNamePlaceholder: 'Enter name here e.g. My-File',
     ready: 'Ready.',
-    create: 'Create PDF',
+    create: 'Download PDF',
     files: 'Order & Preview',
     sortHint: 'Drag the number in the top-right corner or enter a position below. X removes a file.',
     noFiles: 'No files selected yet. Drop files above.',
@@ -50,7 +53,6 @@ const translations = {
     done: 'Done! PDF was downloaded.',
     error: 'Error while creating the PDF.',
     remove: 'Remove',
-    next: 'Next',
     share: 'Share PDF',
     shareUnsupported: 'Sharing is not supported by this browser.',
     pdfPreview: 'PDF page 1',
@@ -63,9 +65,6 @@ let selectedItems = [];
 let currentLang = getSystemLanguage();
 let dragState = null;
 let lastPdfFile = null;
-let nextBtn = null;
-let shareBtn = null;
-let finalActions = null;
 
 const fileInput = document.getElementById('fileInput');
 const fileList = document.getElementById('fileList');
@@ -75,11 +74,11 @@ const createBtn = document.getElementById('createBtn');
 const clearBtn = document.getElementById('clearBtn');
 const languageSelect = document.getElementById('languageSelect');
 const fileCount = document.getElementById('fileCount');
+const pdfNameInput = document.getElementById('pdfName');
+const shareBtn = document.getElementById('shareBtn');
 
 languageSelect.value = 'auto';
 applyLanguage(currentLang);
-injectCleanStyles();
-setupActionButtons();
 renderFileList();
 
 fileInput.addEventListener('change', event => {
@@ -88,6 +87,10 @@ fileInput.addEventListener('change', event => {
 });
 
 createBtn.addEventListener('click', createPdf);
+
+if (shareBtn) {
+  shareBtn.addEventListener('click', shareLastPdf);
+}
 
 clearBtn.addEventListener('click', () => {
   clearAllItems();
@@ -98,8 +101,6 @@ clearBtn.addEventListener('click', () => {
 languageSelect.addEventListener('change', () => {
   currentLang = languageSelect.value === 'auto' ? getSystemLanguage() : languageSelect.value;
   applyLanguage(currentLang);
-  if (nextBtn) nextBtn.textContent = t('next');
-  if (shareBtn) shareBtn.textContent = t('share');
   setStatus(t('ready'));
   renderFileList();
 });
@@ -158,9 +159,15 @@ function t(key, value) {
 
 function applyLanguage(lang) {
   document.documentElement.lang = lang;
+
   document.querySelectorAll('[data-i18n]').forEach(element => {
     element.textContent = t(element.dataset.i18n);
   });
+
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
+    element.placeholder = t(element.dataset.i18nPlaceholder);
+  });
+
   updateCount();
 }
 
@@ -179,6 +186,7 @@ async function addFiles(files) {
   }));
 
   selectedItems = [...selectedItems, ...newItems];
+  hideShareButton();
   renderFileList();
 
   for (const item of newItems) {
@@ -373,6 +381,7 @@ function reorderFiles(fromIndex, toIndex) {
   if (!item) return;
   currentItems.splice(toIndex, 0, item);
   selectedItems = currentItems;
+  hideShareButton();
   renderFileList();
 }
 
@@ -382,6 +391,7 @@ function removeFile(index) {
   item.deleted = true;
   revokePreview(item);
   selectedItems = selectedItems.filter((_, itemIndex) => itemIndex !== index);
+  hideShareButton();
   renderFileList();
 }
 
@@ -392,7 +402,7 @@ function clearAllItems() {
   });
   selectedItems = [];
   lastPdfFile = null;
-  if (finalActions) finalActions.style.display = 'none';
+  hideShareButton();
 }
 
 function revokePreview(item) {
@@ -412,37 +422,27 @@ function setStatus(message) {
   statusBox.textContent = message;
 }
 
-function setupActionButtons() {
-  nextBtn = document.createElement('button');
-  nextBtn.className = 'btn btn-soft';
-  nextBtn.id = 'nextBtn';
-  nextBtn.type = 'button';
-  nextBtn.textContent = t('next');
-  nextBtn.addEventListener('click', () => {
-    document.querySelector('.list-header')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
-  createBtn.insertAdjacentElement('beforebegin', nextBtn);
+function showShareButton() {
+  if (!shareBtn) return;
+  shareBtn.classList.add('is-visible');
+  shareBtn.disabled = false;
+}
 
-  finalActions = document.createElement('div');
-  finalActions.id = 'finalActions';
-  finalActions.style.display = 'none';
-
-  shareBtn = document.createElement('button');
-  shareBtn.className = 'btn btn-primary';
-  shareBtn.id = 'shareBtn';
-  shareBtn.type = 'button';
-  shareBtn.textContent = t('share');
-  shareBtn.addEventListener('click', shareLastPdf);
-
-  finalActions.appendChild(shareBtn);
-  fileList.insertAdjacentElement('afterend', finalActions);
+function hideShareButton() {
+  if (!shareBtn) return;
+  shareBtn.classList.remove('is-visible');
+  shareBtn.disabled = true;
 }
 
 async function shareLastPdf() {
   if (!lastPdfFile) return;
 
   if (navigator.canShare && navigator.canShare({ files: [lastPdfFile] }) && navigator.share) {
-    await navigator.share({ title: 'All2PDF Studio', text: 'PDF created with All2PDF Studio', files: [lastPdfFile] });
+    await navigator.share({
+      title: lastPdfFile.name,
+      text: 'PDF created with PDF Studio',
+      files: [lastPdfFile]
+    });
   } else {
     setStatus(t('shareUnsupported'));
   }
@@ -457,6 +457,7 @@ async function createPdf() {
 
   setStatus(t('creating'));
   createBtn.disabled = true;
+  hideShareButton();
 
   try {
     const outputPdf = await PDFDocument.create();
@@ -478,13 +479,14 @@ async function createPdf() {
     }
 
     const pdfBytes = await outputPdf.save();
-    lastPdfFile = new File([pdfBytes], 'merged-pdf.pdf', { type: 'application/pdf' });
+    const finalFileName = getFinalPdfFileName();
 
-    if (finalActions && navigator.canShare && navigator.canShare({ files: [lastPdfFile] })) {
-      finalActions.style.display = 'flex';
-    }
+    lastPdfFile = new File([pdfBytes], finalFileName, {
+      type: 'application/pdf'
+    });
 
-    downloadPdf(pdfBytes, 'merged-pdf.pdf');
+    downloadPdf(pdfBytes, finalFileName);
+    showShareButton();
     setStatus(t('done'));
   } catch (error) {
     console.error(error);
@@ -492,6 +494,17 @@ async function createPdf() {
   } finally {
     createBtn.disabled = false;
   }
+}
+
+function getFinalPdfFileName() {
+  const rawName = pdfNameInput?.value?.trim() || 'merged-pdf';
+  const safeName = rawName
+    .replace(/\.pdf$/i, '')
+    .replace(/[\\/:*?"<>|]/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return `${safeName || 'merged-pdf'}.pdf`;
 }
 
 function isDocumentFile(file) {
@@ -628,216 +641,6 @@ function downloadPdf(bytes, filename) {
   link.download = filename;
   link.click();
   URL.revokeObjectURL(url);
-}
-
-function formatBytes(bytes) {
-  if (!bytes) return '0 B';
-  const units = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
-  return `${(bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
-}
-
-function injectCleanStyles() {
-  const style = document.createElement('style');
-  style.textContent = `
-    #nextBtn { align-items: center; justify-content: center; }
-    #finalActions { margin-top: 16px; display: none; justify-content: flex-end; }
-    #shareBtn { align-items: center; justify-content: center; }
-
-    #fileList {
-      display: grid !important;
-      grid-template-columns: repeat(auto-fill, 170px) !important;
-      gap: 16px !important;
-      align-items: start !important;
-      justify-content: start !important;
-      min-height: 180px !important;
-    }
-
-    .file-card {
-      position: relative !important;
-      display: grid !important;
-      gap: 9px !important;
-      width: 170px !important;
-      min-width: 170px !important;
-      max-width: 170px !important;
-      padding: 10px !important;
-      border-radius: 22px !important;
-      background: white !important;
-      border: 1px solid var(--border) !important;
-      box-shadow: 0 10px 24px rgba(16, 24, 40, 0.06) !important;
-      box-sizing: border-box !important;
-      overflow: visible !important;
-    }
-
-    .preview {
-      width: 150px !important;
-      height: 210px !important;
-      border-radius: 17px !important;
-      overflow: hidden !important;
-      border: 1px solid var(--border) !important;
-      background: #f8fafc !important;
-      display: grid !important;
-      place-items: center !important;
-    }
-
-    .preview img,
-    .preview canvas {
-      width: 100% !important;
-      height: 100% !important;
-      object-fit: contain !important;
-      background: #f8fafc !important;
-      pointer-events: none !important;
-      user-select: none !important;
-      -webkit-user-drag: none !important;
-    }
-
-    .preview-placeholder {
-      display: grid !important;
-      place-items: center !important;
-      width: 100% !important;
-      height: 100% !important;
-      color: #64748b !important;
-      font-weight: 900 !important;
-      font-size: 26px !important;
-    }
-
-    .preview-badge {
-      position: absolute !important;
-      left: 8px !important;
-      top: 8px !important;
-      padding: 5px 8px !important;
-      border-radius: 999px !important;
-      background: rgba(17,24,39,0.78) !important;
-      color: white !important;
-      font-size: 11px !important;
-      font-weight: 900 !important;
-      z-index: 3 !important;
-    }
-
-    .order-chip,
-    .remove-chip {
-      position: absolute !important;
-      z-index: 6 !important;
-      border: none !important;
-      display: grid !important;
-      place-items: center !important;
-      box-shadow: 0 10px 20px rgba(16,24,40,0.18) !important;
-      user-select: none !important;
-    }
-
-    .order-chip {
-      right: 8px !important;
-      top: 8px !important;
-      width: 38px !important;
-      height: 38px !important;
-      border-radius: 999px !important;
-      background: linear-gradient(135deg, var(--primary), var(--primary-dark)) !important;
-      color: white !important;
-      font-weight: 950 !important;
-      font-size: 18px !important;
-      cursor: grab !important;
-      touch-action: none !important;
-    }
-
-    .remove-chip {
-      left: 8px !important;
-      top: 8px !important;
-      width: 28px !important;
-      height: 28px !important;
-      border-radius: 999px !important;
-      background: rgba(239,68,68,0.96) !important;
-      color: white !important;
-      font-size: 20px !important;
-      cursor: pointer !important;
-    }
-
-    .file-title {
-      font-weight: 850 !important;
-      overflow: hidden !important;
-      white-space: nowrap !important;
-      text-overflow: ellipsis !important;
-      font-size: 14px !important;
-      padding: 0 3px !important;
-      color: var(--text) !important;
-    }
-
-    .position-jump {
-      display: flex !important;
-      align-items: center !important;
-      justify-content: space-between !important;
-      gap: 8px !important;
-      padding: 6px 8px !important;
-      border-radius: 12px !important;
-      background: #f8fafc !important;
-      border: 1px solid var(--border) !important;
-      color: var(--muted) !important;
-      font-size: 12px !important;
-      font-weight: 800 !important;
-    }
-
-    .position-input {
-      display: block !important;
-      width: 48px !important;
-      border: none !important;
-      outline: none !important;
-      background: white !important;
-      border-radius: 9px !important;
-      padding: 5px 4px !important;
-      text-align: center !important;
-      font-weight: 900 !important;
-      color: var(--text) !important;
-    }
-
-    .position-input:focus { box-shadow: 0 0 0 3px rgba(99,91,255,0.16) !important; }
-
-    .file-tools,
-    .file-buttons,
-    .btn-move,
-    .btn-soft[data-action="up"],
-    .btn-soft[data-action="down"],
-    .btn-danger[data-action="remove"] { display: none !important; }
-
-    .drag-source { opacity: 0.22 !important; }
-    .drag-ghost {
-      position: fixed !important;
-      z-index: 9999 !important;
-      pointer-events: none !important;
-      opacity: 0.74 !important;
-      transform: scale(1.04) rotate(1deg) !important;
-      box-shadow: 0 26px 70px rgba(16,24,40,0.30) !important;
-    }
-
-    .drop-placeholder {
-      border: 2px dashed var(--primary) !important;
-      border-radius: 22px !important;
-      background: rgba(99,91,255,0.10) !important;
-      box-shadow: inset 0 0 0 4px rgba(99,91,255,0.08) !important;
-    }
-
-    @media (max-width: 820px) {
-      #nextBtn, #shareBtn { width: 100%; }
-      #finalActions { justify-content: stretch; }
-      .actions { gap: 8px !important; }
-
-      #fileList {
-        grid-template-columns: repeat(auto-fill, 145px) !important;
-        gap: 12px !important;
-      }
-
-      .file-card {
-        width: 145px !important;
-        min-width: 145px !important;
-        max-width: 145px !important;
-        padding: 9px !important;
-      }
-
-      .preview {
-        width: 127px !important;
-        height: 178px !important;
-      }
-    }
-  `;
-  document.head.appendChild(style);
 }
 
 function escapeHtml(value) {
