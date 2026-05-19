@@ -151,6 +151,8 @@ const fileList = document.getElementById('fileList');
 const statusBox = document.getElementById('status');
 const dropZone = document.getElementById('dropZone');
 const createBtn = document.getElementById('createBtn');
+let shareBtn = null;
+let lastPdfFile = null;
 const clearBtn = document.getElementById('clearBtn');
 const languageSelect = document.getElementById('languageSelect');
 const fileCount = document.getElementById('fileCount');
@@ -159,6 +161,7 @@ languageSelect.value = 'auto';
 applyLanguage(currentLang);
 injectFixedGalleryStyles();
 renderFileList();
+setupShareButton();
 
 fileInput.addEventListener('change', event => {
   addFiles(event.target.files);
@@ -435,6 +438,30 @@ function setStatus(message) {
   statusBox.textContent = message;
 }
 
+function setupShareButton() {
+  shareBtn = document.createElement('button');
+  shareBtn.className = 'btn btn-soft';
+  shareBtn.id = 'shareBtn';
+  shareBtn.textContent = currentLang === 'de' ? 'Teilen' : 'Share';
+  shareBtn.style.display = 'none';
+  shareBtn.addEventListener('click', shareLastPdf);
+  createBtn.insertAdjacentElement('afterend', shareBtn);
+}
+
+async function shareLastPdf() {
+  if (!lastPdfFile) return;
+
+  if (navigator.canShare && navigator.canShare({ files: [lastPdfFile] }) && navigator.share) {
+    await navigator.share({
+      title: 'All2PDF Studio',
+      text: 'PDF created with All2PDF Studio',
+      files: [lastPdfFile]
+    });
+  } else {
+    setStatus(currentLang === 'de' ? 'Teilen wird von diesem Browser nicht unterstützt.' : 'Sharing is not supported by this browser.');
+  }
+}
+
 async function createPdf() {
   const itemsToMerge = selectedItems.filter(item => item && !item.deleted && item.file);
 
@@ -466,6 +493,10 @@ async function createPdf() {
     }
 
     const pdfBytes = await outputPdf.save();
+    lastPdfFile = new File([pdfBytes], 'merged-pdf.pdf', { type: 'application/pdf' });
+    if (shareBtn && navigator.canShare && navigator.canShare({ files: [lastPdfFile] })) {
+      shareBtn.style.display = 'inline-flex';
+    }
     downloadPdf(pdfBytes, 'merged-pdf.pdf');
     setStatus(t('done'));
   } catch (error) {
@@ -663,6 +694,20 @@ function formatBytes(bytes) {
 function injectFixedGalleryStyles() {
   const style = document.createElement('style');
   style.textContent = `
+    #shareBtn {
+      margin-left: 10px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @media (max-width: 820px) {
+      #shareBtn {
+        width: 100%;
+        margin-left: 0;
+        margin-top: 10px;
+      }
+    }
+
     .file-list {
       display: grid !important;
       grid-template-columns: repeat(auto-fill, 170px) !important;
