@@ -77,14 +77,9 @@ const fileCount = document.getElementById('fileCount');
 const pdfNameInput = document.getElementById('pdfName');
 const shareBtn = document.getElementById('shareBtn');
 
-if (shareBtn) {
-  makeShareButtonClickable();
-  setInterval(makeShareButtonClickable, 300);
-}
-
 languageSelect.value = 'auto';
 applyLanguage(currentLang);
-hideShareButton();
+makeShareButtonVisible();
 renderFileList();
 
 fileInput.addEventListener('change', event => {
@@ -92,10 +87,10 @@ fileInput.addEventListener('change', event => {
   fileInput.value = '';
 });
 
-createBtn.addEventListener('click', createPdf);
+createBtn.addEventListener('click', () => createPdf(false));
 
 if (shareBtn) {
-  shareBtn.addEventListener('click', shareLastPdf);
+  shareBtn.addEventListener('click', () => createPdf(true));
 }
 
 clearBtn.addEventListener('click', () => {
@@ -108,6 +103,7 @@ languageSelect.addEventListener('change', () => {
   currentLang = languageSelect.value === 'auto' ? getSystemLanguage() : languageSelect.value;
   applyLanguage(currentLang);
   setStatus(t('ready'));
+  makeShareButtonVisible();
   renderFileList();
 });
 
@@ -177,6 +173,15 @@ function applyLanguage(lang) {
   updateCount();
 }
 
+function makeShareButtonVisible() {
+  if (!shareBtn) return;
+  shareBtn.style.display = 'block';
+  shareBtn.disabled = false;
+  shareBtn.removeAttribute('disabled');
+  shareBtn.style.pointerEvents = 'auto';
+  shareBtn.style.cursor = 'pointer';
+}
+
 async function addFiles(files) {
   const allowed = Array.from(files).filter(file =>
     file.type === 'application/pdf' || file.type.startsWith('image/') || isDocumentFile(file)
@@ -193,7 +198,7 @@ async function addFiles(files) {
 
   selectedItems = [...selectedItems, ...newItems];
   lastPdfFile = null;
-  hideShareButton();
+  makeShareButtonVisible();
   renderFileList();
 
   for (const item of newItems) {
@@ -389,7 +394,7 @@ function reorderFiles(fromIndex, toIndex) {
   currentItems.splice(toIndex, 0, item);
   selectedItems = currentItems;
   lastPdfFile = null;
-  hideShareButton();
+  makeShareButtonVisible();
   renderFileList();
 }
 
@@ -400,7 +405,7 @@ function removeFile(index) {
   revokePreview(item);
   selectedItems = selectedItems.filter((_, itemIndex) => itemIndex !== index);
   lastPdfFile = null;
-  hideShareButton();
+  makeShareButtonVisible();
   renderFileList();
 }
 
@@ -411,7 +416,7 @@ function clearAllItems() {
   });
   selectedItems = [];
   lastPdfFile = null;
-  hideShareButton();
+  makeShareButtonVisible();
 }
 
 function revokePreview(item) {
@@ -431,42 +436,6 @@ function setStatus(message) {
   statusBox.textContent = message;
 }
 
-function showShareButton() {
-  makeShareButtonClickable();
-}bled');
-  shareBtn.style.pointerEvents = 'auto';
-  shareBtn.style.cursor = 'pointer';
-}
-
-function showShareButton() {
-  if (!shareBtn) return;
-  shareBtn.style.display = 'block';
-  shareBtn.classList.add('is-visible');
-  shareBtn.disabled = false;
-  shareBtn.removeAttribute('disabled');
-}
-
-function hideShareButton() {
-  makeShareButtonClickable();
-}
-
-async function shareLastPdf() {
-  if (!lastPdfFile) {
-    await createPdf(true);
-    return;
-  }
-
-  if (navigator.canShare && navigator.canShare({ files: [lastPdfFile] }) && navigator.share) {
-    await navigator.share({
-      title: lastPdfFile.name,
-      text: 'PDF created with PDF Studio',
-      files: [lastPdfFile]
-    });
-  } else {
-    setStatus(t('shareUnsupported'));
-  }
-}
-
 async function createPdf(shareAfterCreate = false) {
   const itemsToMerge = selectedItems.filter(item => item && !item.deleted && item.file);
   if (itemsToMerge.length === 0) {
@@ -476,7 +445,7 @@ async function createPdf(shareAfterCreate = false) {
 
   setStatus(t('creating'));
   createBtn.disabled = true;
-  hideShareButton();
+  if (shareBtn) shareBtn.disabled = true;
 
   try {
     const outputPdf = await PDFDocument.create();
@@ -505,11 +474,9 @@ async function createPdf(shareAfterCreate = false) {
     });
 
     if (shareAfterCreate) {
-      showShareButton();
-      await shareLastPdf();
+      await shareFile(lastPdfFile);
     } else {
       downloadPdf(pdfBytes, finalFileName);
-      showShareButton();
       setStatus(t('done'));
     }
   } catch (error) {
@@ -517,6 +484,22 @@ async function createPdf(shareAfterCreate = false) {
     setStatus(t('error'));
   } finally {
     createBtn.disabled = false;
+    makeShareButtonVisible();
+  }
+}
+
+async function shareFile(file) {
+  if (!file) return;
+
+  if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+    await navigator.share({
+      title: file.name,
+      text: 'PDF created with PDF Studio',
+      files: [file]
+    });
+    setStatus(t('done'));
+  } else {
+    setStatus(t('shareUnsupported'));
   }
 }
 
