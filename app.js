@@ -157,6 +157,7 @@ const fileCount = document.getElementById('fileCount');
 
 languageSelect.value = 'auto';
 applyLanguage(currentLang);
+injectFixedGalleryStyles();
 renderFileList();
 
 fileInput.addEventListener('change', event => {
@@ -657,6 +658,63 @@ function formatBytes(bytes) {
   const units = ['B', 'KB', 'MB', 'GB'];
   const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
   return `${(bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+}
+
+function injectFixedGalleryStyles() {
+  const style = document.createElement('style');
+  style.textContent = `
+    .file-list {
+      display: grid !important;
+      grid-template-columns: repeat(auto-fill, 170px) !important;
+      gap: 16px !important;
+      align-items: start !important;
+      justify-content: start !important;
+      min-height: 180px !important;
+    }
+
+    .file-card {
+      width: 170px !important;
+      min-width: 170px !important;
+      max-width: 170px !important;
+      box-sizing: border-box !important;
+    }
+
+    .preview {
+      width: 150px !important;
+      height: 210px !important;
+      max-width: 150px !important;
+      max-height: 210px !important;
+      aspect-ratio: auto !important;
+    }
+
+    .preview img,
+    .preview canvas {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+    }
+
+    @media (max-width: 820px) {
+      .file-list {
+        grid-template-columns: repeat(auto-fill, 130px) !important;
+        gap: 10px !important;
+      }
+
+      .file-card {
+        width: 130px !important;
+        min-width: 130px !important;
+        max-width: 130px !important;
+      }
+
+      .preview {
+        width: 112px !important;
+        height: 156px !important;
+        max-width: 112px !important;
+        max-height: 156px !important;
+      }
+    }
+  `;
+  document.head.appendChild(style);
 }
 
 function escapeHtml(value) {
