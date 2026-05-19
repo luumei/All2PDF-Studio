@@ -428,12 +428,14 @@ function setStatus(message) {
 
 function showShareButton() {
   if (!shareBtn) return;
+  shareBtn.style.display = 'block';
   shareBtn.classList.add('is-visible');
   shareBtn.disabled = false;
 }
 
 function hideShareButton() {
   if (!shareBtn) return;
+  shareBtn.style.display = 'block';
   shareBtn.classList.add('is-visible');
   shareBtn.disabled = true;
 }
