@@ -131,14 +131,19 @@
 
     .file-list {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(clamp(105px, 22vw, 170px), 1fr));
+      grid-template-columns: repeat(auto-fill, 170px);
       gap: 16px;
       align-items: start;
+      justify-content: start;
+      min-height: 180px;
     }
 
     .file-card {
       position: relative;
       display: grid;
+      width: 170px;
+      min-width: 170px;
+      max-width: 170px;
       gap: 10px;
       background: white;
       border: 1px solid var(--border);
@@ -162,6 +167,8 @@
     .preview {
       width: 100%;
       aspect-ratio: 0.72 / 1;
+      height: 220px;
+      max-height: 220px;
       border-radius: 17px;
       overflow: hidden;
       background: #f3f4f6;
@@ -279,7 +286,11 @@
       .actions { flex-direction: column; align-items: stretch; }
       .btn-primary { width: 100%; }
       .list-header { align-items: flex-start; flex-direction: column; }
-      .file-list { grid-template-columns: repeat(auto-fit, minmax(clamp(96px, 30vw, 145px), 1fr)); gap: 10px; }
+      .file-list {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        justify-content: start;
+        gap: 10px;
+      }
       .file-card { border-radius: 18px; padding: 8px; }
       .position-input { padding: 8px; }
       .file-buttons .btn { padding: 8px 9px; }
