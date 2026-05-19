@@ -147,7 +147,6 @@ let currentLang = getSystemLanguage();
 let draggedIndex = null;
 let touchDrag = null;
 let activeMoveIndex = null;
-let activeMoveIndex = null;
 
 const fileInput = document.getElementById('fileInput');
 const fileList = document.getElementById('fileList');
@@ -213,7 +212,8 @@ fileList.addEventListener('click', event => {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
 
-  const index = Numbif (button.dataset.action === 'move') {
+  const index = Number(button.dataset.index);
+  if (button.dataset.action === 'move') {
     activeMoveIndex = activeMoveIndex === index ? null : index;
     setStatus(activeMoveIndex === null
       ? t('ready')
@@ -224,7 +224,14 @@ fileList.addEventListener('click', event => {
   }
   if (button.dataset.action === 'up') moveFile(index, -1);
   if (button.dataset.action === 'down') moveFile(index, 1);
-  if (button.dataset.action === 'remove') removeFile(index);x = Number(input.dataset.index);
+  if (button.dataset.action === 'remove') removeFile(index);
+});
+
+fileList.addEventListener('change', event => {
+  const input = event.target.closest('.position-input');
+  if (!input) return;
+
+  const fromIndex = Number(input.dataset.index);
   let toPosition = Number(input.value);
 
   if (!Number.isFinite(toPosition)) {
@@ -336,7 +343,7 @@ function renderFileList() {
     card.draggable = !window.matchMedia('(pointer: coarse)').matches;
     card.dataset.index = index;
 
-    const badge = item.previewType === 'pdf' ? 'PDcard.draggable = !window.matchMedia('(pointer: coarse)').matches;=== 'doc' ? getDocumentBadge(item.file) : 'IMG';
+    const badge = item.previewType === 'pdf' ? 'PDF' : item.previewType === 'doc' ? getDocumentBadge(item.file) : 'IMG';
     const previewLabel = item.previewType === 'pdf' ? t('pdfPreview') : item.previewType === 'doc' ? t('docPreview') : t('imagePreview');
 
     card.innerHTML = `
@@ -355,11 +362,13 @@ function renderFileList() {
           <span>${t('position')}</span>
           <input class="position-input" type="number" min="1" max="${selectedItems.length}" value="${index + 1}" data-index="${index}">
         </label>
-        
-          <button class="btn btn-soft" data-action="down" data-index="${index}">${t('down')}</button>
-   <div class="file-buttons">
+        <div class="file-buttons">
           <button class="btn btn-move" data-action="move" data-index="${index}" title="Move">↕</button>
-          <button class="btn btn-soft" data-action="up" data-index="${index}">${t('up')}</button>  </div>
+          <button class="btn btn-soft" data-action="up" data-index="${index}">${t('up')}</button>
+          <button class="btn btn-soft" data-action="down" data-index="${index}">${t('down')}</button>
+          <button class="btn btn-danger" data-action="remove" data-index="${index}">${t('remove')}</button>
+        </div>
+      </div>
     `;
 
     card.addEventListener('dragstart', () => {
@@ -387,13 +396,6 @@ function renderFileList() {
       reorderFiles(draggedIndex, Number(card.dataset.index));
     });
 
-    setupLong'mcard.addEventListener('drop', event => {
-      event.preventDefault();
-      event.stopPropagation();
-      card.classList.remove('drag-over');
-      reorderFiles(draggedIndex, Number(card.dataset.index));
-    });
-
     card.addEventListener('click', event => {
       if (event.target.closest('button, input')) return;
       if (activeMoveIndex === null) return;
@@ -403,11 +405,76 @@ function renderFileList() {
       setStatus(t('ready'));
     });
 
-    if (activeMoveIndex === index) card.classList.add('move-selected');card.addEventListener('pointermove', event function setupLongPressDrag(card, index) {
+    if (activeMoveIndex === index) card.classList.add('move-selected');
+
+    fileList.appendChild(card);
+  });
+}
+
+function setupLongPressDrag(card, index) {
   return;
 }
 
-function startTouchDrag].indexOf(touchDrag.placeholder);
+function startTouchDrag(card, index, x, y) {
+  if (touchDrag) cancelTouchDrag();
+
+  const rect = card.getBoundingClientRect();
+  const ghost = card.cloneNode(true);
+  ghost.classList.add('touch-drag-ghost');
+  ghost.style.width = `${rect.width}px`;
+  ghost.style.left = `${x - rect.width / 2}px`;
+  ghost.style.top = `${y - 40}px`;
+
+  const placeholder = document.createElement('div');
+  placeholder.className = 'drop-placeholder';
+  placeholder.style.width = `${rect.width}px`;
+  placeholder.style.height = `${rect.height}px`;
+
+  card.classList.add('touch-drag-source');
+  document.body.appendChild(ghost);
+  fileList.insertBefore(placeholder, card.nextSibling);
+
+  touchDrag = {
+    fromIndex: index,
+    targetIndex: index,
+    ghost,
+    placeholder,
+    sourceCard: card
+  };
+
+  if (navigator.vibrate) navigator.vibrate(25);
+}
+
+function moveTouchDrag(x, y) {
+  if (!touchDrag) return;
+
+  touchDrag.ghost.style.left = `${x - touchDrag.ghost.offsetWidth / 2}px`;
+  touchDrag.ghost.style.top = `${y - 55}px`;
+
+  const cards = [...fileList.querySelectorAll('.file-card:not(.touch-drag-source)')];
+  let targetCard = null;
+  let targetIndex = selectedItems.length - 1;
+
+  for (const card of cards) {
+    const rect = card.getBoundingClientRect();
+    const middleY = rect.top + rect.height / 2;
+    const middleX = rect.left + rect.width / 2;
+
+    if (y < middleY || (Math.abs(y - middleY) < rect.height / 2 && x < middleX)) {
+      targetCard = card;
+      targetIndex = Number(card.dataset.index);
+      break;
+    }
+  }
+
+  if (targetCard) {
+    fileList.insertBefore(touchDrag.placeholder, targetCard);
+  } else {
+    fileList.appendChild(touchDrag.placeholder);
+    targetIndex = selectedItems.length - 1;
+  }
+
+  const placeholderIndex = [...fileList.children].indexOf(touchDrag.placeholder);
   touchDrag.targetIndex = Math.max(0, Math.min(selectedItems.length - 1, placeholderIndex));
 }
 
@@ -817,7 +884,7 @@ function injectFixedGalleryStyles() {
       }
     }
 
-    .file-list {
+    #fileList {
       display: grid !important;
       grid-template-columns: repeat(auto-fill, 170px) !important;
       gap: 16px !important;
@@ -827,6 +894,12 @@ function injectFixedGalleryStyles() {
     }
 
     .file-card {
+      display: grid !important;
+      gap: 10px !important;
+      background: white !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 22px !important;
+      padding: 10px !important;
       width: 170px !important;
       min-width: 170px !important;
       max-width: 170px !important;
@@ -834,6 +907,11 @@ function injectFixedGalleryStyles() {
     }
 
     .preview {
+      overflow: hidden !important;
+      border-radius: 16px !important;
+      border: 1px solid var(--border) !important;
+      display: grid !important;
+      place-items: center !important;
       width: 150px !important;
       height: 210px !important;
       max-width: 150px !important;
@@ -850,37 +928,9 @@ function injectFixedGalleryStyles() {
     }
 
     @media (max-width: 820px) {
-      .file-list {
+      #fileList {
         grid-template-columns: repeat(auto-fill, 130px) !important;
-.btn-move {
-      background: #eef2ff !important;
-      color: #3730a3 !important;
-      border: 1px solid #c7d2fe !important;
-    }
-
-    .move-selected {
-      border-color: var(--primary) !important;
-      box-shadow: 0 0 0 5px rgba(99,91,255,0.16), 0 18px 36px rgba(16,24,40,0.12) !important;
-      transform: scale(1.02) !important;
-    }
-
-    .move-selected::after {
-      content: 'Tap target';
-      position: absolute;
-      left: 10px;
-      right: 10px;
-      bottom: 52px;
-      padding: 7px 8px;
-      border-radius: 999px;
-      background: rgba(17, 24, 39, 0.82);
-      color: white;
-      text-align: center;
-      font-size: 11px;
-      font-weight: 900;
-      z-index: 3;
-    }
-
-    .touch-drag-source {mportant;
+        gap: 10px !important;
       }
 
       .file-card {
