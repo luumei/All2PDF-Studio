@@ -77,6 +77,12 @@ const fileCount = document.getElementById('fileCount');
 const pdfNameInput = document.getElementById('pdfName');
 const shareBtn = document.getElementById('shareBtn');
 
+if (shareBtn) {
+  shareBtn.style.display = 'block';
+  shareBtn.classList.add('is-visible');
+  shareBtn.disabled = false;
+}
+
 languageSelect.value = 'auto';
 applyLanguage(currentLang);
 hideShareButton();
@@ -437,11 +443,14 @@ function hideShareButton() {
   if (!shareBtn) return;
   shareBtn.style.display = 'block';
   shareBtn.classList.add('is-visible');
-  shareBtn.disabled = true;
+  shareBtn.disabled = false;
 }
 
 async function shareLastPdf() {
-  if (!lastPdfFile) return;
+  if (!lastPdfFile) {
+    await createPdf(true);
+    return;
+  }
 
   if (navigator.canShare && navigator.canShare({ files: [lastPdfFile] }) && navigator.share) {
     await navigator.share({
@@ -454,7 +463,7 @@ async function shareLastPdf() {
   }
 }
 
-async function createPdf() {
+async function createPdf(shareAfterCreate = false) {
   const itemsToMerge = selectedItems.filter(item => item && !item.deleted && item.file);
   if (itemsToMerge.length === 0) {
     setStatus(t('chooseFirst'));
@@ -491,9 +500,14 @@ async function createPdf() {
       type: 'application/pdf'
     });
 
-    downloadPdf(pdfBytes, finalFileName);
-    showShareButton();
-    setStatus(t('done'));
+    if (shareAfterCreate) {
+      showShareButton();
+      await shareLastPdf();
+    } else {
+      downloadPdf(pdfBytes, finalFileName);
+      showShareButton();
+      setStatus(t('done'));
+    }
   } catch (error) {
     console.error(error);
     setStatus(t('error'));
