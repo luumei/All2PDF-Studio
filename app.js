@@ -79,6 +79,7 @@ const shareBtn = document.getElementById('shareBtn');
 
 languageSelect.value = 'auto';
 applyLanguage(currentLang);
+hideShareButton();
 renderFileList();
 
 fileInput.addEventListener('change', event => {
@@ -186,6 +187,7 @@ async function addFiles(files) {
   }));
 
   selectedItems = [...selectedItems, ...newItems];
+  lastPdfFile = null;
   hideShareButton();
   renderFileList();
 
@@ -381,6 +383,7 @@ function reorderFiles(fromIndex, toIndex) {
   if (!item) return;
   currentItems.splice(toIndex, 0, item);
   selectedItems = currentItems;
+  lastPdfFile = null;
   hideShareButton();
   renderFileList();
 }
@@ -391,6 +394,7 @@ function removeFile(index) {
   item.deleted = true;
   revokePreview(item);
   selectedItems = selectedItems.filter((_, itemIndex) => itemIndex !== index);
+  lastPdfFile = null;
   hideShareButton();
   renderFileList();
 }
