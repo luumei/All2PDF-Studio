@@ -79,26 +79,16 @@
       font-weight: 900;
     }
 
-    .logo-text {
-      min-width: 0;
-    }
-
     .logo-text strong {
       display: block;
       font-size: 18px;
       line-height: 1.1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
 
     .logo-text span {
       display: block;
       color: var(--muted);
       font-size: 13px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
 
     .toolbar {
@@ -116,7 +106,7 @@
     }
 
     select {
-      max-width: 180px;
+      max-width: 190px;
       border: 1px solid var(--border);
       background: white;
       border-radius: 999px;
@@ -171,30 +161,12 @@
       overflow: hidden;
     }
 
-    .drop-zone::before {
-      content: "";
-      position: absolute;
-      inset: 16px;
-      border-radius: 18px;
-      border: 1px solid rgba(255, 255, 255, 0.75);
-      pointer-events: none;
-    }
-
     .drop-zone:hover,
     .drop-zone.dragover {
       transform: translateY(-2px);
       border-color: var(--primary);
       background: linear-gradient(135deg, rgba(99, 91, 255, 0.18), rgba(6, 182, 212, 0.16)), rgba(255, 255, 255, 0.75);
       box-shadow: 0 18px 45px rgba(99, 91, 255, 0.18);
-    }
-
-    .drop-zone.dragover {
-      outline: 5px solid rgba(99, 91, 255, 0.12);
-    }
-
-    .drop-content {
-      position: relative;
-      z-index: 1;
     }
 
     .upload-icon {
@@ -234,7 +206,6 @@
 
     .pdf-name-box label {
       font-weight: 800;
-      color: var(--text);
     }
 
     .pdf-name-box input {
@@ -246,10 +217,6 @@
       color: var(--text);
       font-size: 15px;
       outline: none;
-    }
-
-    .pdf-name-box input::placeholder {
-      color: #9ca3af;
     }
 
     .pdf-name-box input:focus {
@@ -316,10 +283,6 @@
       border: 1px solid var(--border);
     }
 
-    #shareBtn {
-      display: block;
-    }
-
     .list-header {
       display: flex;
       justify-content: space-between;
@@ -373,11 +336,6 @@
       transition: 0.18s ease;
     }
 
-    .file-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 18px 36px rgba(16, 24, 40, 0.11);
-    }
-
     .preview {
       width: 150px;
       height: 210px;
@@ -390,13 +348,15 @@
       position: relative;
     }
 
-    .preview img,
-    .preview canvas {
+    .preview img {
       width: 100%;
       height: 100%;
       object-fit: contain;
       display: block;
       background: #f8fafc;
+      pointer-events: none;
+      user-select: none;
+      -webkit-user-drag: none;
     }
 
     .preview-placeholder {
@@ -415,6 +375,7 @@
       color: white;
       font-size: 11px;
       font-weight: 900;
+      z-index: 3;
     }
 
     .order-chip,
@@ -491,10 +452,6 @@
       color: var(--text);
     }
 
-    .position-input:focus {
-      box-shadow: 0 0 0 3px rgba(99, 91, 255, 0.16);
-    }
-
     .empty {
       text-align: center;
       color: var(--muted);
@@ -502,6 +459,7 @@
       border-radius: 20px;
       background: rgba(255, 255, 255, 0.7);
       border: 1px dashed var(--border);
+      grid-column: 1 / -1;
     }
 
     .drag-source {
@@ -546,18 +504,8 @@
         min-width: 0;
       }
 
-      .logo-text strong,
-      .logo-text span {
-        white-space: normal;
-      }
-
       .panel {
         padding: 16px;
-      }
-
-      .drop-zone {
-        min-height: 230px;
-        padding: 28px 16px;
       }
 
       .actions {
