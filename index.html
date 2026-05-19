@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF Studio</title>
+  <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+  <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.mjs" type="module"></script>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: rgba(255, 255, 255, 0.9);
+      --text: #101827;
+      --muted: #667085;
+      --primary: #635bff;
+      --primary-dark: #4f46e5;
+      --accent: #06b6d4;
+      --danger: #ef4444;
+      --border: #e5e7eb;
+      --shadow: 0 24px 70px rgba(16, 24, 40, 0.13);
+      --radius: 26px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 12% 8%, rgba(99, 91, 255, 0.22), transparent 34%),
+        radial-gradient(circle at 90% 12%, rgba(6, 182, 212, 0.18), transparent 30%),
+        linear-gradient(180deg, #ffffff 0%, var(--bg) 44%, #eef2ff 100%);
+      padding: 28px;
+    }
+
+    .app { width: min(1180px, 100%); margin: 0 auto; }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 22px;
+      padding: 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 12px 35px rgba(16, 24, 40, 0.08);
+      backdrop-filter: blur(16px);
+    }
+
+    .logo { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .logo-mark {
+      width: 44px; height: 44px; display: grid; place-items: center;
+      border-radius: 16px; color: white;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      box-shadow: 0 12px 24px rgba(99, 91, 255, 0.28); flex: 0 0 auto;
+      font-weight: 900;
+    }
+    .logo-text { min-width: 0; }
+    .logo-text strong { display: block; font-size: 18px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .logo-text span { display: block; color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .toolbar { display: flex; gap: 10px; align-items: center; justify-content: flex-end; flex: 0 0 auto; }
+    select, button, input { font: inherit; }
+    select {
+      max-width: 180px; border: 1px solid var(--border); background: white;
+      border-radius: 999px; padding: 11px 14px; color: var(--text); outline: none;
+    }
+
+    .headline { text-align: center; padding: 14px 8px 2px; }
+    .headline h1 { margin: 0; font-size: clamp(34px, 6vw, 64px); letter-spacing: -0.055em; line-height: 0.96; }
+    .headline p { margin: 14px auto 0; max-width: 760px; color: var(--muted); font-size: clamp(15px, 2vw, 18px); line-height: 1.6; }
+
+    .panel {
+      margin-top: 22px;
+      background: var(--card);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.88);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px;
+      overflow: hidden;
+    }
+
+    .drop-zone {
+      position: relative; display: grid; place-items: center; min-height: 250px;
+      padding: 34px 24px; text-align: center; cursor: pointer;
+      border: 2px dashed #a5b4fc; border-radius: 24px;
+      background: linear-gradient(135deg, rgba(99,91,255,0.10), rgba(6,182,212,0.09)), rgba(255,255,255,0.62);
+      transition: 0.2s ease; overflow: hidden;
+    }
+    .drop-zone::before { content: ""; position: absolute; inset: 16px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.75); pointer-events: none; }
+    .drop-zone:hover, .drop-zone.dragover {
+      transform: translateY(-2px); border-color: var(--primary);
+      background: linear-gradient(135deg, rgba(99,91,255,0.18), rgba(6,182,212,0.16)), rgba(255,255,255,0.75);
+      box-shadow: 0 18px 45px rgba(99, 91, 255, 0.18);
+    }
+    .drop-zone.dragover { outline: 5px solid rgba(99, 91, 255, 0.12); }
+    .drop-content { position: relative; z-index: 1; }
+    .upload-icon { width: 76px; height: 76px; display: grid; place-items: center; margin: 0 auto 16px; border-radius: 24px; background: white; box-shadow: 0 16px 34px rgba(99,91,255,0.2); font-size: 34px; }
+    .drop-zone strong { display: block; font-size: clamp(22px, 3vw, 30px); margin-bottom: 10px; letter-spacing: -0.03em; }
+    .drop-zone span { color: var(--muted); line-height: 1.6; }
+    input[type="file"] { display: none; }
+
+    .actions {
+      display: flex; justify-content: space-between; align-items: center; gap: 14px;
+      margin-top: 18px; padding: 14px; border-radius: 20px;
+      background: rgba(248, 250, 252, 0.9); border: 1px solid var(--border);
+    }
+    .status { color: var(--muted); min-height: 24px; overflow-wrap: anywhere; }
+
+    .btn {
+      border: none; border-radius: 14px; padding: 12px 16px; cursor: pointer;
+      font-weight: 800; transition: 0.18s ease; white-space: nowrap;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; box-shadow: 0 14px 26px rgba(79, 70, 229, 0.28); }
+    .btn-soft { background: white; color: var(--text); border: 1px solid var(--border); }
+    .btn-danger { background: #fee2e2; color: #991b1b; }
+
+    .list-header { display: flex; justify-content: space-between; align-items: end; gap: 12px; margin: 26px 0 12px; }
+    .list-header h2 { margin: 0; font-size: 22px; letter-spacing: -0.03em; }
+    .hint { color: var(--muted); font-size: 14px; line-height: 1.5; }
+    .file-count { padding: 7px 11px; border-radius: 999px; background: #eef2ff; color: #3730a3; font-weight: 800; white-space: nowrap; }
+
+    .file-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(clamp(105px, 22vw, 170px), 1fr));
+      gap: 16px;
+      align-items: start;
+    }
+
+    .file-card {
+      position: relative;
+      display: grid;
+      gap: 10px;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 10px;
+      box-shadow: 0 10px 24px rgba(16, 24, 40, 0.06);
+      cursor: grab;
+      transition: 0.18s ease;
+      min-width: 0;
+    }
+
+    .file-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 36px rgba(16, 24, 40, 0.11);
+    }
+
+    .file-card:active { cursor: grabbing; }
+    .file-card.dragging { opacity: 0.42; transform: scale(0.985); }
+    .file-card.drag-over { border-color: var(--primary); box-shadow: 0 0 0 5px rgba(99,91,255,0.13); }
+
+    .preview {
+      width: 100%;
+      aspect-ratio: 0.72 / 1;
+      border-radius: 17px;
+      overflow: hidden;
+      background: #f3f4f6;
+      border: 1px solid var(--border);
+      display: grid;
+      place-items: center;
+      position: relative;
+    }
+
+    .preview img, .preview canvas {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .preview-badge {
+      position: absolute;
+      left: 8px;
+      top: 8px;
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: rgba(17,24,39,0.78);
+      color: white;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .order-badge {
+      position: absolute;
+      right: 8px;
+      top: 8px;
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      font-weight: 950;
+      box-shadow: 0 10px 20px rgba(79, 70, 229, 0.28);
+      z-index: 2;
+    }
+
+    .preview-placeholder { color: var(--muted); font-weight: 900; font-size: 26px; }
+
+    .file-info { min-width: 0; }
+    .file-title {
+      font-weight: 850;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-size: clamp(11px, 2vw, 14px);
+      padding: 0 2px;
+    }
+    .file-meta, .file-help { display: none; }
+
+    .file-tools {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .position-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      min-width: 0;
+    }
+
+    .position-row span { display: none; }
+
+    .position-input {
+      width: clamp(46px, 11vw, 64px);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 9px;
+      text-align: center;
+      font-weight: 900;
+      outline: none;
+      background: #f8fafc;
+    }
+
+    .position-input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(99,91,255,0.12); }
+
+    .file-buttons {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .file-buttons .btn {
+      padding: 8px clamp(7px, 1.8vw, 10px);
+      border-radius: 11px;
+      font-size: clamp(10px, 1.9vw, 12px);
+    }
+
+    .file-buttons .btn-soft { display: none; }
+
+    .empty { text-align: center; color: var(--muted); padding: 34px; border-radius: 20px; background: rgba(255,255,255,0.7); border: 1px dashed var(--border); }
+
+    @media (max-width: 820px) {
+      body { padding: 14px; }
+      .topbar { border-radius: 22px; align-items: stretch; flex-direction: column; }
+      .toolbar { width: 100%; justify-content: stretch; }
+      .toolbar select, .toolbar button { flex: 1; min-width: 0; }
+      .logo-text strong, .logo-text span { white-space: normal; }
+      .panel { padding: 16px; }
+      .drop-zone { min-height: 230px; padding: 28px 16px; }
+      .actions { flex-direction: column; align-items: stretch; }
+      .btn-primary { width: 100%; }
+      .list-header { align-items: flex-start; flex-direction: column; }
+      .file-list { grid-template-columns: repeat(auto-fit, minmax(clamp(96px, 30vw, 145px), 1fr)); gap: 10px; }
+      .file-card { border-radius: 18px; padding: 8px; }
+      .position-input { padding: 8px; }
+      .file-buttons .btn { padding: 8px 9px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <nav class="topbar">
+      <div class="logo">
+        <div class="logo-mark">PDF</div>
+        <div class="logo-text">
+          <strong data-i18n="appName">PDF Studio</strong>
+          <span data-i18n="topline">Lokal im Browser · keine Uploads</span>
+        </div>
+      </div>
+      <div class="toolbar">
+        <select id="languageSelect" aria-label="Language">
+          <option value="auto">🌍 Auto</option>
+          <option value="de">Deutsch</option>
+          <option value="en">English</option>
+          <option value="fr">Français</option>
+          <option value="it">Italiano</option>
+          <option value="es">Español</option>
+        </select>
+        <button class="btn btn-soft" id="clearBtn" data-i18n="clear">Leeren</button>
+      </div>
+    </nav>
+
+    <section class="headline">
+      <h1 data-i18n="title">Ein großes PDF aus allem.</h1>
+      <p data-i18n="subtitle">Ziehe Bilder und PDFs hinein, sieh die Vorschau, sortiere sie frei und lade alles als eine saubere PDF-Datei herunter.</p>
+    </section>
+
+    <section class="panel">
+      <label class="drop-zone" id="dropZone" for="fileInput">
+        <div class="drop-content">
+          <div class="upload-icon">⬆️</div>
+          <strong data-i18n="uploadTitle">Dateien hier hineinziehen</strong>
+          <span data-i18n="uploadText">Oder klicken zum Auswählen. PDF, DOC, DOCX, TXT, RTF, ODT, PPTX, XLSX, PNG, JPG, JPEG und WebP werden unterstützt.</span>
+        </div>
+      </label>
+
+      <input id="fileInput" type="file" multiple accept="application/pdf,image/png,image/jpeg,image/webp,.doc,.docx,.txt,.rtf,.odt,.pptx,.xlsx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,application/rtf,application/vnd.oasis.opendocument.text,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+
+      <div class="actions">
+        <div class="status" id="status" data-i18n="ready">Bereit.</div>
+        <button class="btn btn-primary" id="createBtn" data-i18n="create">PDF erstellen</button>
+      </div>
+
+      <div class="list-header">
+        <div>
+          <h2 data-i18n="files">Reihenfolge & Vorschau</h2>
+          <div class="hint" data-i18n="sortHint">Ziehe Karten hoch/runter oder gib direkt die Zielposition ein.</div>
+        </div>
+        <div class="file-count" id="fileCount">0</div>
+      </div>
+
+      <div class="file-list" id="fileList"></div>
+    </section>
+  </main>
+
+  <script type="module">
+    import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.mjs';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.min.mjs';
+
+    const { PDFDocument } = PDFLib;
+
+    const translations = {
+      de: {
+        appName: 'PDF Studio', topline: 'Lokal im Browser · keine Uploads', title: 'Ein großes PDF aus allem.',
+        subtitle: 'Ziehe Bilder und PDFs hinein, sieh die Vorschau, sortiere sie frei und lade alles als eine saubere PDF-Datei herunter.',
+        clear: 'Leeren', uploadTitle: 'Dateien hier hineinziehen', uploadText: 'Oder klicken zum Auswählen. PDF, DOC, DOCX, TXT, RTF, ODT, PPTX, XLSX, PNG, JPG, JPEG und WebP werden unterstützt.',
+        ready: 'Bereit.', create: 'PDF erstellen', files: 'Reihenfolge & Vorschau', sortHint: 'Ziehe Karten hoch/runter oder gib direkt die Zielposition ein.',
+        noFiles: 'Noch keine Dateien ausgewählt. Ziehe Dateien oben hinein.', count: n => `${n} Datei${n === 1 ? '' : 'en'}`,
+        chooseFirst: 'Bitte zuerst Dateien auswählen.', creating: 'PDF wird erstellt ...', done: 'Fertig! PDF wurde heruntergeladen.', error: 'Fehler beim Erstellen des PDFs.',
+        remove: 'Entfernen', up: 'Hoch', down: 'Runter', position: 'Position', previewLoading: 'Vorschau lädt', pdfPreview: 'PDF-Seite 1', imagePreview: 'Bildvorschau', docxPreview: 'DOCX-Vorschau', docPreview: 'Dokument-Vorschau'
+      },
+      en: {
+        appName: 'PDF Studio', topline: 'Local in your browser · no uploads', title: 'One big PDF from everything.',
+        subtitle: 'Drop images and PDFs, see previews, arrange freely, and download one clean PDF file.', clear: 'Clear', uploadTitle: 'Drop files here',
+        uploadText: 'Or click to select. PDF, DOC, DOCX, TXT, RTF, ODT, PPTX, XLSX, PNG, JPG, JPEG and WebP are supported.', ready: 'Ready.', create: 'Create PDF', files: 'Order & Preview',
+        sortHint: 'Drag cards up/down or enter the target position directly.', noFiles: 'No files selected yet. Drop files above.', count: n => `${n} file${n === 1 ? '' : 's'}`,
+        chooseFirst: 'Please select files first.', creating: 'Creating PDF ...', done: 'Done! PDF was downloaded.', error: 'Error while creating the PDF.',
+        remove: 'Remove', up: 'Up', down: 'Down', position: 'Position', previewLoading: 'Preview loading', pdfPreview: 'PDF page 1', imagePreview: 'Image preview', docxPreview: 'DOCX preview', docPreview: 'Document preview'
+      },
+      fr: {
+        appName: 'PDF Studio', topline: 'Local dans le navigateur · aucun envoi', title: 'Un grand PDF avec tout.',
+        subtitle: 'Déposez images et PDF, voyez les aperçus, organisez librement et téléchargez un seul fichier propre.', clear: 'Vider', uploadTitle: 'Déposez les fichiers ici',
+        uploadText: 'Ou cliquez pour sélectionner. PDF, DOC, DOCX, TXT, RTF, ODT, PPTX, XLSX, PNG, JPG, JPEG et WebP sont pris en charge.', ready: 'Prêt.', create: 'Créer le PDF', files: 'Ordre & aperçu',
+        sortHint: 'Glissez les cartes ou entrez directement la position souhaitée.', noFiles: 'Aucun fichier sélectionné. Déposez des fichiers ci-dessus.', count: n => `${n} fichier${n === 1 ? '' : 's'}`,
+        chooseFirst: 'Veuillez d’abord sélectionner des fichiers.', creating: 'Création du PDF ...', done: 'Terminé ! Le PDF a été téléchargé.', error: 'Erreur lors de la création du PDF.',
+        remove: 'Supprimer', up: 'Monter', down: 'Descendre', position: 'Position', previewLoading: 'Aperçu en cours', pdfPreview: 'PDF page 1', imagePreview: 'Aperçu image'
+      },
+      it: {
+        appName: 'PDF Studio', topline: 'Locale nel browser · nessun upload', title: 'Un grande PDF da tutto.',
+        subtitle: 'Trascina immagini e PDF, vedi le anteprime, ordinali liberamente e scarica un unico file pulito.', clear: 'Svuota', uploadTitle: 'Trascina i file qui',
+        uploadText: 'Oppure clicca per selezionare. PDF, DOC, DOCX, TXT, RTF, ODT, PPTX, XLSX, PNG, JPG, JPEG e WebP sono supportati.', ready: 'Pronto.', create: 'Crea PDF', files: 'Ordine e anteprima',
+        sortHint: 'Trascina le schede o inserisci direttamente la posizione.', noFiles: 'Nessun file selezionato. Trascina i file sopra.', count: n => `${n} file`,
+        chooseFirst: 'Seleziona prima dei file.', creating: 'Creazione PDF ...', done: 'Fatto! Il PDF è stato scaricato.', error: 'Errore durante la creazione del PDF.',
+        remove: 'Rimuovi', up: 'Su', down: 'Giù', position: 'Posizione', previewLoading: 'Anteprima in caricamento', pdfPreview: 'PDF pagina 1', imagePreview: 'Anteprima immagine', docxPreview: 'Anteprima DOCX'
+      },
+      es: {
+        appName: 'PDF Studio', topline: 'Local en el navegador · sin subidas', title: 'Un gran PDF con todo.',
+        subtitle: 'Suelta imágenes y PDFs, mira las vistas previas, ordénalos libremente y descarga un solo archivo limpio.', clear: 'Vaciar', uploadTitle: 'Suelta archivos aquí',
+        uploadText: 'O haz clic para seleccionar. Se admiten PDF, DOC, DOCX, TXT, RTF, ODT, PPTX, XLSX, PNG, JPG, JPEG y WebP.', ready: 'Listo.', create: 'Crear PDF', files: 'Orden y vista previa',
+        sortHint: 'Arrastra tarjetas o escribe directamente la posición deseada.', noFiles: 'Todavía no hay archivos seleccionados. Suelta archivos arriba.', count: n => `${n} archivo${n === 1 ? '' : 's'}`,
+        chooseFirst: 'Selecciona archivos primero.', creating: 'Creando PDF ...', done: '¡Listo! El PDF se ha descargado.', error: 'Error al crear el PDF.',
+        remove: 'Eliminar', up: 'Subir', down: 'Bajar', position: 'Posición', previewLoading: 'Cargando vista', pdfPreview: 'PDF página 1', imagePreview: 'Vista de imagen', docxPreview: 'Vista DOCX'
+      }
+    };
+
+    let selectedItems = [...[]];
+    let currentLang = getSystemLanguage();
+    let draggedIndex = null;
+
+    const fileInput = document.getElementById('fileInput');
+    const fileList = document.getElementById('fileList');
+    const statusBox = document.getElementById('status');
+    const dropZone = document.getElementById('dropZone');
+    const createBtn = document.getElementById('createBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const languageSelect = document.getElementById('languageSelect');
+    const fileCount = document.getElementById('fileCount');
+
+    languageSelect.value = 'auto';
+    applyLanguage(currentLang);
+
+    fileInput.addEventListener('change', event => { addFiles(event.target.files); fileInput.value = ''; });
+    createBtn.addEventListener('click', createPdf);
+    clearBtn.addEventListener('click', () => {
+      clearAllItems();
+      setStatus(t('ready'));
+      renderFileList();
+    });
+    languageSelect.addEventListener('change', () => {
+      currentLang = languageSelect.value === 'auto' ? getSystemLanguage() : languageSelect.value;
+      applyLanguage(currentLang); renderFileList(); setStatus(t('ready'));
+    });
+
+    document.addEventListener('dragover', event => event.preventDefault());
+    document.addEventListener('drop', event => event.preventDefault());
+    ['dragenter', 'dragover'].forEach(eventName => dropZone.addEventListener(eventName, event => { event.preventDefault(); dropZone.classList.add('dragover'); }));
+    ['dragleave', 'drop'].forEach(eventName => dropZone.addEventListener(eventName, event => { event.preventDefault(); dropZone.classList.remove('dragover'); }));
+    dropZone.addEventListener('drop', event => addFiles(event.dataTransfer.files));
+
+    function getSystemLanguage() {
+      const lang = (navigator.language || 'de').slice(0, 2).toLowerCase();
+      return translations[lang] ? lang : 'en';
+    }
+    function t(key, value) {
+      const item = translations[currentLang][key] || translations.en[key];
+      return typeof item === 'function' ? item(value) : item;
+    }
+    function applyLanguage(lang) {
+      document.documentElement.lang = lang;
+      document.querySelectorAll('[data-i18n]').forEach(element => { element.textContent = t(element.dataset.i18n); });
+      updateCount();
+    }
+
+    async function addFiles(files) {
+      const allowed = Array.from(files).filter(file => file.type === 'application/pdf' || file.type.startsWith('image/') || isDocumentFile(file));
+      const newItems = allowed.map(file => ({
+        id: crypto.randomUUID(),
+        file,
+        previewUrl: '',
+        previewType: file.type === 'application/pdf' ? 'pdf' : isDocumentFile(file) ? 'doc' : 'image',
+        deleted: false
+      }));
+
+      selectedItems = [...selectedItems, ...newItems];
+      renderFileList();
+
+      for (const item of newItems) {
+        const currentId = item.id;
+        await createPreview(item, currentId);
+
+        const stillExists = selectedItems.some(activeItem =>
+          activeItem.id === currentId && !activeItem.deleted
+        );
+
+        if (!stillExists) {
+          revokePreview(item);
+          continue;
+        }
+      }
+
+      renderFileList();
+    }
+
+    async function createPreview(item, requestId = item.id) {
+      try {
+        if (item.file.type.startsWith('image/')) {
+          if (item.deleted || item.id !== requestId) return;
+          item.previewUrl = URL.createObjectURL(item.file);
+          return;
+        }
+        if (item.file.type === 'application/pdf') {
+          const bytes = await item.file.arrayBuffer();
+          const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+          const page = await pdf.getPage(1);
+          const viewport = page.getViewport({ scale: 0.35 });
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          await page.render({ canvasContext: context, viewport }).promise;
+          if (item.deleted || item.id !== requestId) return;
+          item.previewUrl = canvas.toDataURL('image/png');
+        }
+        if (isDocumentFile(item.file)) {
+          const preview = await createDocumentPreview(item.file);
+          if (item.deleted || item.id !== requestId) return;
+          item.previewUrl = preview;
+        }
+      } catch (error) {
+        console.error(error);
+        item.previewUrl = '';
+      }
+    }
+
+    function renderFileList() {
+      selectedItems = selectedItems.filter(item => item && !item.deleted && item.file);
+      fileList.innerHTML = '';
+      updateCount();
+      if (selectedItems.length === 0) {
+        fileList.innerHTML = `<div class="empty">${t('noFiles')}</div>`;
+        return;
+      }
+
+      selectedItems.forEach((item, index) => {
+        const file = item.file;
+        const card = document.createElement('div');
+        card.className = 'file-card';
+        card.draggable = true;
+        card.dataset.index = index;
+
+        const badge = item.previewType === 'pdf' ? 'PDF' : item.previewType === 'doc' ? getDocumentBadge(item.file) : 'IMG';
+        const previewLabel = item.previewType === 'pdf' ? t('pdfPreview') : item.previewType === 'doc' ? t('docPreview') : t('imagePreview');
+
+        card.innerHTML = `
+          <div class="order-badge">${index + 1}</div>
+          <div class="preview" title="${previewLabel}">
+            ${item.previewUrl ? `<img src="${item.previewUrl}" alt="${previewLabel}">` : `<div class="preview-placeholder">…</div>`}
+            <div class="preview-badge">${badge}</div>
+          </div>
+          <div class="file-info">
+            <div class="file-title" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</div>
+            <div class="file-meta">${file.type || 'File'} · ${formatBytes(file.size)}</div>
+            <div class="file-help">${item.previewUrl ? previewLabel : t('previewLoading')}</div>
+          </div>
+          <div class="file-tools">
+            <label class="position-row">
+              <span>${t('position')}</span>
+              <input class="position-input" type="number" min="1" max="${selectedItems.length}" value="${index + 1}" data-index="${index}">
+            </label>
+            <div class="file-buttons">
+              <button class="btn btn-soft" data-action="up" data-index="${index}">${t('up')}</button>
+              <button class="btn btn-soft" data-action="down" data-index="${index}">${t('down')}</button>
+              <button class="btn btn-danger" data-action="remove" data-index="${index}">${t('remove')}</button>
+            </div>
+          </div>
+        `;
+
+        card.addEventListener('dragstart', () => { draggedIndex = index; card.classList.add('dragging'); });
+        card.addEventListener('dragend', () => { draggedIndex = null; card.classList.remove('dragging'); document.querySelectorAll('.file-card').forEach(el => el.classList.remove('drag-over')); });
+        card.addEventListener('dragover', event => { event.preventDefault(); card.classList.add('drag-over'); });
+        card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+        card.addEventListener('drop', event => {
+          event.preventDefault(); event.stopPropagation(); card.classList.remove('drag-over');
+          reorderFiles(draggedIndex, Number(card.dataset.index));
+        });
+
+        fileList.appendChild(card);
+      });
+    }
+
+    fileList.addEventListener('click', event => {
+      const button = event.target.closest('button[data-action]');
+      if (!button) return;
+      const index = Number(button.dataset.index);
+      if (button.dataset.action === 'up') moveFile(index, -1);
+      if (button.dataset.action === 'down') moveFile(index, 1);
+      if (button.dataset.action === 'remove') removeFile(index);
+    });
+
+    fileList.addEventListener('change', event => {
+      const input = event.target.closest('.position-input');
+      if (!input) return;
+      const fromIndex = Number(input.dataset.index);
+      let toPosition = Number(input.value);
+      if (!Number.isFinite(toPosition)) return renderFileList();
+      toPosition = Math.max(1, Math.min(selectedItems.length, Math.round(toPosition)));
+      reorderFiles(fromIndex, toPosition - 1);
+    });
+
+    function updateCount() { fileCount.textContent = t('count', selectedItems.length); }
+    function moveFile(index, direction) {
+      const newIndex = index + direction;
+      if (newIndex < 0 || newIndex >= selectedItems.length) return;
+      reorderFiles(index, newIndex);
+    }
+    function reorderFiles(fromIndex, toIndex) {
+      if (fromIndex === null || fromIndex === toIndex || fromIndex < 0 || toIndex < 0) return;
+      const currentItems = selectedItems.filter(item => item && !item.deleted);
+      const [item] = currentItems.splice(fromIndex, 1);
+      if (!item) return;
+      currentItems.splice(toIndex, 0, item);
+      selectedItems = [...currentItems];
+      renderFileList();
+    }
+    function removeFile(index) {
+      const item = selectedItems[index];
+      if (!item) return;
+      item.deleted = true;
+      revokePreview(item);
+      selectedItems = selectedItems.filter((_, itemIndex) => itemIndex !== index);
+
+      selectedItems = [...selectedItems];
+      draggedIndex = null;
+      renderFileList();
+    }
+
+    function clearAllItems() {
+      selectedItems.forEach(item => {
+        item.deleted = true;
+        revokePreview(item);
+      });
+      selectedItems = [];
+      draggedIndex = null;
+    }
+
+    function revokePreview(item) {
+      if (item?.previewUrl && item.previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(item.previewUrl);
+      }
+      if (item) item.previewUrl = '';
+    }
+    function setStatus(message) { statusBox.textContent = message; }
+
+    async function createPdf() {
+      const itemsToMerge = selectedItems.filter(item => item && !item.deleted && item.file);
+
+      if (itemsToMerge.length === 0) { setStatus(t('chooseFirst')); return; }
+      setStatus(t('creating')); createBtn.disabled = true;
+      try {
+        const outputPdf = await PDFDocument.create();
+        for (const item of itemsToMerge) {
+          if (!selectedItems.some(activeItem => activeItem.id === item.id)) continue;
+          const file = item.file;
+          const bytes = await file.arrayBuffer();
+          if (file.type === 'application/pdf') {
+            const inputPdf = await PDFDocument.load(bytes);
+            const pages = await outputPdf.copyPages(inputPdf, inputPdf.getPageIndices());
+            pages.forEach(page => outputPdf.addPage(page));
+          } else if (file.type.startsWith('image/')) {
+            await addImagePage(outputPdf, file, bytes);
+          } else if (isDocumentFile(file)) {
+            await addDocumentPages(outputPdf, file);
+          }
+        }
+        const pdfBytes = await outputPdf.save();
+        downloadPdf(pdfBytes, 'merged-pdf.pdf');
+        setStatus(t('done'));
+      } catch (error) {
+        console.error(error); setStatus(t('error'));
+      } finally { createBtn.disabled = false; }
+    }
+
+    function isDocumentFile(file) {
+      const name = file.name.toLowerCase();
+      return ['.doc', '.docx', '.txt', '.rtf', '.odt', '.pptx', '.xlsx'].some(ext => name.endsWith(ext));
+    }
+
+    function getDocumentBadge(file) {
+      const ext = file.name.split('.').pop()?.toUpperCase();
+      return ext || 'DOC';
+    }
+
+    async function createDocumentPreview(file) {
+      const html = await documentToHtml(file);
+      const previewBox = document.createElement('div');
+      previewBox.style.cssText = 'position:fixed;left:-10000px;top:0;width:794px;min-height:1123px;background:white;color:#111;padding:56px;font-family:Arial,sans-serif;font-size:18px;line-height:1.5;';
+      previewBox.innerHTML = html;
+      document.body.appendChild(previewBox);
+      const canvas = await html2canvas(previewBox, { scale: 0.35, backgroundColor: '#ffffff' });
+      document.body.removeChild(previewBox);
+      return canvas.toDataURL('image/png');
+    }
+
+    async function addDocumentPages(pdf, file) {
+      const html = await documentToHtml(file);
+      const pageWidth = 595.28, pageHeight = 841.89;
+      const pageElement = document.createElement('div');
+      pageElement.style.cssText = 'position:fixed;left:-10000px;top:0;width:794px;background:white;color:#111;padding:56px;font-family:Arial,sans-serif;font-size:18px;line-height:1.5;';
+      pageElement.innerHTML = html;
+      document.body.appendChild(pageElement);
+
+      const fullCanvas = await html2canvas(pageElement, { scale: 2, backgroundColor: '#ffffff' });
+      document.body.removeChild(pageElement);
+
+      const a4Ratio = pageHeight / pageWidth;
+      const sliceHeight = Math.floor(fullCanvas.width * a4Ratio);
+
+      for (let y = 0; y < fullCanvas.height; y += sliceHeight) {
+        const sliceCanvas = document.createElement('canvas');
+        sliceCanvas.width = fullCanvas.width;
+        sliceCanvas.height = Math.min(sliceHeight, fullCanvas.height - y);
+        const ctx = sliceCanvas.getContext('2d');
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+        ctx.drawImage(fullCanvas, 0, y, sliceCanvas.width, sliceCanvas.height, 0, 0, sliceCanvas.width, sliceCanvas.height);
+        const imageBytes = await dataUrlToArrayBuffer(sliceCanvas.toDataURL('image/jpeg', 0.95));
+        const image = await pdf.embedJpg(imageBytes);
+        const page = pdf.addPage([pageWidth, pageHeight]);
+        const scale = Math.min(pageWidth / image.width, pageHeight / image.height);
+        const width = image.width * scale;
+        const height = image.height * scale;
+        page.drawImage(image, { x: (pageWidth - width) / 2, y: pageHeight - height, width, height });
+      }
+    }
+
+    async function documentToHtml(file) {
+      const name = file.name.toLowerCase();
+
+      if (name.endsWith('.txt')) {
+        const text = await file.text();
+        return `<pre style="white-space:pre-wrap;font-family:Arial,sans-serif;">${escapeHtml(text)}</pre>`;
+      }
+
+      if (name.endsWith('.docx')) {
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.convertToHtml({ arrayBuffer });
+        return result.value || '<p>DOCX</p>';
+      }
+
+      if (name.endsWith('.doc')) {
+        return `<h1>DOC Dokument</h1><p>${escapeHtml(file.name)}</p><p>Alte DOC-Dateien haben eingeschränkte Browser-Unterstützung.</p>`;
+      }
+
+      if (name.endsWith('.rtf')) {
+        const text = await file.text();
+        return `<h1>RTF Dokument</h1><pre style="white-space:pre-wrap;">${escapeHtml(text.slice(0, 50000))}</pre>`;
+      }
+
+      if (name.endsWith('.odt')) {
+        return `<h1>ODT Dokument</h1><p>${escapeHtml(file.name)}</p><p>ODT wird als einfache Vorschau dargestellt.</p>`;
+      }
+
+      if (name.endsWith('.pptx')) {
+        return `<h1>PPTX Präsentation</h1><p>${escapeHtml(file.name)}</p><p>Präsentation wurde importiert.</p>`;
+      }
+
+      if (name.endsWith('.xlsx')) {
+        return `<h1>XLSX Tabelle</h1><p>${escapeHtml(file.name)}</p><p>Tabelle wurde importiert.</p>`;
+      }
+
+      return `<h1>Dokument</h1><p>${escapeHtml(file.name)}</p>`;
+    }
+
+    async function dataUrlToArrayBuffer(dataUrl) {
+      const res = await fetch(dataUrl);
+      return await res.arrayBuffer();
+    }
+
+    async function addImagePage(pdf, file, bytes) {
+      let image;
+      if (file.type === 'image/png') image = await pdf.embedPng(bytes);
+      else image = await pdf.embedJpg(await convertImageToJpgBytes(file));
+      const pageWidth = 595.28, pageHeight = 841.89, margin = 28;
+      const page = pdf.addPage([pageWidth, pageHeight]);
+      const scale = Math.min((pageWidth - margin * 2) / image.width, (pageHeight - margin * 2) / image.height);
+      const finalWidth = image.width * scale, finalHeight = image.height * scale;
+      page.drawImage(image, { x: (pageWidth - finalWidth) / 2, y: (pageHeight - finalHeight) / 2, width: finalWidth, height: finalHeight });
+    }
+
+    function convertImageToJpgBytes(file) {
+      return new Promise((resolve, reject) => {
+        const img = new Image(); const reader = new FileReader();
+        reader.onload = () => {
+          img.onload = () => {
+            const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height;
+            const ctx = canvas.getContext('2d'); ctx.fillStyle = 'white'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0);
+            canvas.toBlob(blob => { if (!blob) reject(new Error('Image conversion failed')); else blob.arrayBuffer().then(resolve); }, 'image/jpeg', 0.95);
+          };
+          img.onerror = reject; img.src = reader.result;
+        };
+        reader.onerror = reject; reader.readAsDataURL(file);
+      });
+    }
+
+    function downloadPdf(bytes, filename) {
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a'); link.href = url; link.download = filename; link.click();
+      URL.revokeObjectURL(url);
+    }
+    function formatBytes(bytes) {
+      if (!bytes) return '0 B';
+      const units = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+      return `${(bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+    }
+    function escapeHtml(value) {
+      return value.replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[char]));
+    }
+
+    renderFileList();
+  </script>
+</body>
+</html>
